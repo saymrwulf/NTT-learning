@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -11,6 +12,12 @@ from ntt_learning.course import REPO_ROOT, TECHNICAL_NOTEBOOKS
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+MPLCONFIGDIR = REPO_ROOT / ".cache" / "matplotlib"
+MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIGDIR))
+
+import matplotlib.pyplot as plt
 
 
 def read_notebook(relative_path: Path) -> dict[str, object]:
@@ -46,8 +53,8 @@ class NotebookExecutionTests(unittest.TestCase):
                             mode="exec",
                         )
                         exec(code_object, namespace, namespace)
+                        plt.close("all")
 
 
 if __name__ == "__main__":
     unittest.main()
-
