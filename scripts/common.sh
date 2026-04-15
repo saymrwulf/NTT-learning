@@ -38,3 +38,30 @@ is_running() {
   kill -0 "$pid" 2>/dev/null
 }
 
+runtime_json_for_pid() {
+  local pid="${1:-}"
+  local runtime_json="$REPO_ROOT/.jupyter_runtime/jpserver-$pid.json"
+
+  [[ -n "$pid" ]] || return 1
+  [[ -f "$runtime_json" ]] || return 1
+  printf '%s\n' "$runtime_json"
+}
+
+access_url_for_pid() {
+  local pid="${1:-}"
+  local runtime_json
+
+  runtime_json="$(runtime_json_for_pid "$pid")" || return 1
+
+  "$VENV_PY" -c '
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+url = payload["url"].rstrip("/")
+token = payload.get("token")
+print(f"{url}/lab?token={token}" if token else f"{url}/lab")
+' "$runtime_json"
+}

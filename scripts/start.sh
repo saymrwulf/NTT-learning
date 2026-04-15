@@ -13,7 +13,11 @@ if ! jupyter_installed; then
 fi
 
 if is_running; then
-  echo "JupyterLab is already running with pid $(<"$PID_FILE")."
+  pid="$(<"$PID_FILE")"
+  echo "JupyterLab is already running with pid $pid."
+  if access_url="$(access_url_for_pid "$pid" 2>/dev/null)"; then
+    echo "$access_url"
+  fi
   exit 0
 fi
 
@@ -33,12 +37,20 @@ nohup env \
   >"$LOG_FILE" 2>&1 &
 
 echo $! > "$PID_FILE"
-sleep 1
+pid="$(<"$PID_FILE")"
 
-if ! is_running; then
-  echo "JupyterLab failed to start. Check $LOG_FILE."
-  exit 1
-fi
+for _ in $(seq 1 20); do
+  if ! is_running; then
+    echo "JupyterLab failed to start. Check $LOG_FILE."
+    exit 1
+  fi
 
-echo "JupyterLab started at http://127.0.0.1:$PORT/lab"
+  if access_url="$(access_url_for_pid "$pid" 2>/dev/null)"; then
+    echo "JupyterLab started at $access_url"
+    exit 0
+  fi
 
+  sleep 0.5
+done
+
+echo "JupyterLab started with pid $pid, but the runtime URL was not detected yet. Check $LOG_FILE."

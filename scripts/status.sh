@@ -21,11 +21,14 @@ else
 fi
 
 if is_running; then
+  pid="$(<"$PID_FILE")"
   echo "server=running"
-  echo "pid=$(<"$PID_FILE")"
+  echo "pid=$pid"
+  if access_url="$(access_url_for_pid "$pid" 2>/dev/null)"; then
+    echo "access_url=$access_url"
+  fi
 else
   echo "server=stopped"
 fi
 
 echo "notebooks_dir=$REPO_ROOT/notebooks"
-
