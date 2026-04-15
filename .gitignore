@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.run/
+.cache/
+.ipython/
+.jupyter_config/
+.jupyter_data/
+.jupyter_runtime/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.DS_Store
