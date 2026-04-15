@@ -805,7 +805,10 @@ def build_bundle_02() -> None:
                 "demo",
                 "Inspect ω, ψ, And The Direct Transform Matrix",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_primitive_root, find_psi, ntt_psi_exponent_grid, ntt_psi_matrix
+                from ntt_learning.visuals import plot_ntt_psi_exponent_heatmap, plot_ntt_psi_matrix_heatmap
 
                 modulus = 17
                 n = 4
@@ -820,6 +823,9 @@ def build_bundle_02() -> None:
                 print("NTT_psi matrix:")
                 for row in ntt_psi_matrix(n, modulus, psi):
                     print(row)
+
+                display(plot_ntt_psi_exponent_heatmap(n, title="Exponents 2ij + i for n=4"))
+                display(plot_ntt_psi_matrix_heatmap(n, modulus, psi, title="Concrete NTT_psi matrix in Z_17"))
                 """,
             ),
             markdown(
@@ -856,7 +862,10 @@ def build_bundle_02() -> None:
                 "demo",
                 "Use Direct NTTψ For Negacyclic Multiplication",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_psi, forward_ntt_psi, inverse_ntt_psi, negacyclic_multiply, pointwise_multiply
+                from ntt_learning.visuals import plot_transform_pipeline
 
                 left = [1, 2, 3, 4]
                 right = [5, 6, 7, 8]
@@ -872,6 +881,7 @@ def build_bundle_02() -> None:
                 print("pointwise product:", product_hat)
                 print("inverse of pointwise product:", inverse_ntt_psi(product_hat, modulus, psi))
                 print("schoolbook negacyclic:", negacyclic_multiply(left, right, n=4, modulus=modulus))
+                display(plot_transform_pipeline(left, right, modulus=modulus, psi=psi, title="Direct negacyclic multiply pipeline"))
                 """,
             ),
             markdown(
@@ -1160,15 +1170,30 @@ def build_bundle_02() -> None:
                 "demo",
                 "Compare Positive-Wrapped And Negative-Wrapped Views",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_primitive_root, find_psi, forward_ntt, forward_ntt_psi
+                from ntt_learning.visuals import plot_vector_comparison
 
                 signal = [1, 2, 3, 4]
                 modulus = 17
                 omega = find_primitive_root(4, modulus)
                 psi = find_psi(4, modulus)
 
-                print("positive-wrapped NTT:", forward_ntt(signal, modulus, omega))
-                print("negative-wrapped NTT_psi:", forward_ntt_psi(signal, modulus, psi))
+                positive = forward_ntt(signal, modulus, omega)
+                negative = forward_ntt_psi(signal, modulus, psi)
+
+                print("positive-wrapped NTT:", positive)
+                print("negative-wrapped NTT_psi:", negative)
+                display(
+                    plot_vector_comparison(
+                        positive,
+                        negative,
+                        left_label="positive",
+                        right_label="negative",
+                        title="Same signal, different transform story",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -1191,15 +1216,30 @@ def build_bundle_02() -> None:
                 "exercise",
                 "See A Wrong-Root Failure",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_primitive_root, find_psi, forward_ntt_psi
+                from ntt_learning.visuals import plot_vector_comparison
 
                 signal = [1, 2, 3, 4]
                 modulus = 17
                 omega = find_primitive_root(4, modulus)
                 psi = find_psi(4, modulus)
 
-                print("correct psi-based transform:", forward_ntt_psi(signal, modulus, psi))
-                print("wrongly using omega as if it were psi:", forward_ntt_psi(signal, modulus, omega))
+                correct = forward_ntt_psi(signal, modulus, psi)
+                wrong = forward_ntt_psi(signal, modulus, omega)
+
+                print("correct psi-based transform:", correct)
+                print("wrongly using omega as if it were psi:", wrong)
+                display(
+                    plot_vector_comparison(
+                        wrong,
+                        correct,
+                        left_label="wrong_root",
+                        right_label="correct",
+                        title="Wrong root vs correct root",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -1275,7 +1315,7 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, forward_ntt_psi
-                from ntt_learning.visuals import interactive_trace, plot_trace_overview
+                from ntt_learning.visuals import interactive_trace, plot_butterfly_network, plot_trace_overview
 
                 signal = [1, 2, 3, 4]
                 modulus = 7681
@@ -1286,6 +1326,7 @@ def build_bundle_03() -> None:
                 print("bit-reversed back to NO:", trace.normal_order_output)
                 print("direct NTT_psi:", forward_ntt_psi(signal, modulus, psi))
                 display(plot_trace_overview(trace, title="CT overview for [1,2,3,4]"))
+                display(plot_butterfly_network(trace, title="Full CT network for [1,2,3,4]"))
                 display(interactive_trace(trace, title="CT forward trace"))
                 """,
             ),
@@ -1330,7 +1371,7 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, find_psi
-                from ntt_learning.visuals import interactive_trace, plot_trace_overview
+                from ntt_learning.visuals import interactive_trace, plot_butterfly_network, plot_trace_overview
 
                 signal = [0, 1, 2, 3, 4, 5, 6, 7]
                 modulus = 97
@@ -1341,7 +1382,32 @@ def build_bundle_03() -> None:
                 print("BO output:", trace.raw_output)
                 print("NO output:", trace.normal_order_output)
                 display(plot_trace_overview(trace, title="Three CT stages for n=8"))
+                display(plot_butterfly_network(trace, title="Full CT network for n=8"))
                 display(interactive_trace(trace, title="n=8 CT stage explorer"))
+                """,
+            ),
+            code(
+                "mandatory",
+                3,
+                "demo",
+                "See BO Output And NO Output Side By Side",
+                """
+                from IPython.display import display
+
+                from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace
+                from ntt_learning.visuals import plot_bit_reversal_mapping, plot_vector_comparison
+
+                trace = fast_ntt_psi_ct_trace([1, 2, 3, 4], 7681, 1925)
+                display(
+                    plot_vector_comparison(
+                        trace.raw_output,
+                        trace.normal_order_output,
+                        left_label="BO",
+                        right_label="NO",
+                        title="Same CT values, different ordering",
+                    )
+                )
+                display(plot_bit_reversal_mapping(4, title="Why BO becomes NO after bit-reversal"))
                 """,
             ),
             markdown(
@@ -1602,13 +1668,15 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace
-                from ntt_learning.visuals import plot_trace_overview
+                from ntt_learning.visuals import plot_butterfly_network, plot_trace_overview
 
                 trace_a = fast_ntt_psi_ct_trace([1, 2, 3, 4], 7681, 1925)
                 trace_b = fast_ntt_psi_ct_trace([5, 6, 7, 8], 7681, 1925)
 
                 display(plot_trace_overview(trace_a, title="CT trace A"))
                 display(plot_trace_overview(trace_b, title="CT trace B"))
+                display(plot_butterfly_network(trace_a, title="CT network A"))
+                display(plot_butterfly_network(trace_b, title="CT network B"))
                 """,
             ),
             markdown(
@@ -1631,7 +1699,10 @@ def build_bundle_03() -> None:
                 "exercise",
                 "See A Wrong-Order Comparison Failure",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, forward_ntt_psi
+                from ntt_learning.visuals import plot_vector_comparison
 
                 trace = fast_ntt_psi_ct_trace([1, 2, 3, 4], 7681, 1925)
                 direct = forward_ntt_psi([1, 2, 3, 4], 7681, 1925)
@@ -1640,6 +1711,24 @@ def build_bundle_03() -> None:
                 print(trace.raw_output, direct)
                 print("correct comparison: CT NO output vs direct NO output")
                 print(trace.normal_order_output, direct)
+                display(
+                    plot_vector_comparison(
+                        trace.raw_output,
+                        direct,
+                        left_label="CT_BO",
+                        right_label="direct_NO",
+                        title="Wrong comparison: BO against NO",
+                    )
+                )
+                display(
+                    plot_vector_comparison(
+                        trace.normal_order_output,
+                        direct,
+                        left_label="CT_NO",
+                        right_label="direct_NO",
+                        title="Correct comparison after reordering",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -1710,7 +1799,7 @@ def build_bundle_04() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_intt_psi_gs_trace
-                from ntt_learning.visuals import interactive_trace, plot_trace_overview
+                from ntt_learning.visuals import interactive_trace, plot_butterfly_network, plot_trace_overview, plot_vector_comparison
 
                 bo_input = [1467, 3471, 2807, 7621]
                 trace = fast_intt_psi_gs_trace(bo_input, 7681, 1925)
@@ -1718,6 +1807,16 @@ def build_bundle_04() -> None:
                 print("unscaled NO output:", trace.raw_output)
                 print("scaled NO output:", trace.scaled_output)
                 display(plot_trace_overview(trace, title="GS overview for the n=4 paper example"))
+                display(plot_butterfly_network(trace, title="Full GS network for the n=4 paper example"))
+                display(
+                    plot_vector_comparison(
+                        trace.raw_output,
+                        trace.scaled_output,
+                        left_label="unscaled",
+                        right_label="scaled",
+                        title="Why the final n^-1 scaling matters",
+                    )
+                )
                 display(interactive_trace(trace, title="GS inverse trace"))
                 """,
             ),
@@ -1751,7 +1850,10 @@ def build_bundle_04() -> None:
                 "demo",
                 "Full Forward And Inverse Round Trip",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import fast_intt_psi_gs_trace, fast_ntt_psi_ct_trace
+                from ntt_learning.visuals import plot_vector_comparison
 
                 signal = [1, 2, 3, 4]
                 forward_trace = fast_ntt_psi_ct_trace(signal, 7681, 1925)
@@ -1759,6 +1861,15 @@ def build_bundle_04() -> None:
 
                 print("forward BO output:", forward_trace.raw_output)
                 print("inverse scaled output:", inverse_trace.scaled_output)
+                display(
+                    plot_vector_comparison(
+                        signal,
+                        inverse_trace.scaled_output,
+                        left_label="original",
+                        right_label="recovered",
+                        title="Forward CT followed by inverse GS",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2008,7 +2119,10 @@ def build_bundle_04() -> None:
                 "demo",
                 "See CT Output Feed GS Input",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import fast_intt_psi_gs_trace, fast_ntt_psi_ct_trace
+                from ntt_learning.visuals import plot_vector_comparison
 
                 signal = [5, 6, 7, 8]
                 forward_trace = fast_ntt_psi_ct_trace(signal, 7681, 1925)
@@ -2016,6 +2130,15 @@ def build_bundle_04() -> None:
 
                 print("CT BO output:", forward_trace.raw_output)
                 print("GS scaled output:", inverse_trace.scaled_output)
+                display(
+                    plot_vector_comparison(
+                        signal,
+                        inverse_trace.scaled_output,
+                        left_label="start",
+                        right_label="after_CT_then_GS",
+                        title="CT output cleanly feeds GS input",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2038,11 +2161,23 @@ def build_bundle_04() -> None:
                 "exercise",
                 "See A Missing-Scale Failure",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import fast_intt_psi_gs_trace
+                from ntt_learning.visuals import plot_vector_comparison
 
                 trace = fast_intt_psi_gs_trace([1467, 3471, 2807, 7621], 7681, 1925)
                 print("unscaled:", trace.raw_output)
                 print("scaled:", trace.scaled_output)
+                display(
+                    plot_vector_comparison(
+                        trace.raw_output,
+                        trace.scaled_output,
+                        left_label="missing_scale",
+                        right_label="correct",
+                        title="Missing n^-1 scale vs correct output",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2117,7 +2252,10 @@ def build_bundle_05() -> None:
                 "demo",
                 "Check The Kyber Root Reality Directly",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_primitive_root
+                from ntt_learning.visuals import plot_root_order_comparison
 
                 print("3329 - 1 =", 3329 - 1)
                 print("primitive 256-th root in Z_3329:", find_primitive_root(256, 3329))
@@ -2125,6 +2263,13 @@ def build_bundle_05() -> None:
                     find_primitive_root(512, 3329)
                 except Exception as exc:
                     print("512-th root fails exactly because:", exc)
+
+                display(
+                    plot_root_order_comparison(
+                        [(4, 17), (4, 13), (8, 97), (256, 3329)],
+                        title="Which moduli allow n-th and 2n-th root stories?",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2171,7 +2316,10 @@ def build_bundle_05() -> None:
                 "demo",
                 "See A Toy Base Multiplication",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import base_multiply_pair
+                from ntt_learning.visuals import plot_base_multiply_pair_diagram
 
                 left = [7, 11]
                 right = [5, 13]
@@ -2184,6 +2332,15 @@ def build_bundle_05() -> None:
                 print("raw degree-2 product:", raw)
                 print("reduce with x^2 = zeta:", reduced)
                 print("base_multiply_pair:", base_multiply_pair(left, right, zeta, modulus))
+                display(
+                    plot_base_multiply_pair_diagram(
+                        left,
+                        right,
+                        zeta=zeta,
+                        modulus=modulus,
+                        title="Why Kyber-style multiplication stays in 2-slot blocks",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2410,13 +2567,23 @@ def build_bundle_05() -> None:
                 "demo",
                 "Toy Full ψ Story vs Kyber Root Reality",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_psi
+                from ntt_learning.visuals import plot_root_order_comparison
 
                 print("toy n=4, q=17 has psi:", find_psi(4, 17))
                 try:
                     find_psi(256, 3329)
                 except Exception as exc:
                     print("Kyber v3 does not have that full psi story:", exc)
+
+                display(
+                    plot_root_order_comparison(
+                        [(4, 17), (256, 7681), (256, 3329)],
+                        title="Toy full psi story vs Kyber modulus reality",
+                    )
+                )
                 """,
             ),
             markdown(
@@ -2438,9 +2605,14 @@ def build_bundle_05() -> None:
                 "exercise",
                 "See The Exact Obstruction Again",
                 """
+                from IPython.display import display
+
+                from ntt_learning.visuals import plot_root_order_comparison
+
                 q = 3329
                 n = 256
                 print({"q_minus_1": q - 1, "n": n, "2n": 2 * n, "q_minus_1_mod_n": (q - 1) % n, "q_minus_1_mod_2n": (q - 1) % (2 * n)})
+                display(plot_root_order_comparison([(256, 3329)], title="Kyber v3 obstruction in one row"))
                 """,
             ),
             markdown(
@@ -2512,6 +2684,8 @@ def build_bundle_06() -> None:
                 "demo",
                 "See Four Failure Modes Side By Side",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import (
                     fast_intt_psi_gs_trace,
                     fast_ntt_psi_ct_trace,
@@ -2519,6 +2693,7 @@ def build_bundle_06() -> None:
                     negacyclic_reduce,
                     schoolbook_convolution,
                 )
+                from ntt_learning.visuals import plot_vector_comparison
 
                 signal = [1, 2, 3, 4]
                 forward_trace = fast_ntt_psi_ct_trace(signal, 7681, 1925)
@@ -2536,6 +2711,33 @@ def build_bundle_06() -> None:
                 print("correct NO output:", forward_trace.normal_order_output)
                 print("missing final scaling:", wrong_scale)
                 print("wrong root in direct transform:", wrong_root)
+                display(
+                    plot_vector_comparison(
+                        wrong_sign,
+                        negacyclic_reduce(raw, n=4),
+                        left_label="wrong_sign",
+                        right_label="correct_sign",
+                        title="Wrong sign vs correct negacyclic fold",
+                    )
+                )
+                display(
+                    plot_vector_comparison(
+                        wrong_order,
+                        forward_trace.normal_order_output,
+                        left_label="wrong_order",
+                        right_label="correct_order",
+                        title="Wrong BO/NO comparison",
+                    )
+                )
+                display(
+                    plot_vector_comparison(
+                        wrong_scale,
+                        inverse_trace.scaled_output,
+                        left_label="missing_scale",
+                        right_label="correct_scale",
+                        title="Missing scale vs corrected inverse",
+                    )
+                )
                 """,
             ),
             code(
@@ -2548,6 +2750,7 @@ def build_bundle_06() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_intt_psi_gs_trace, fast_ntt_psi_ct_trace, forward_ntt_psi
+                from ntt_learning.visuals import plot_vector_comparison
 
                 forward_trace = fast_ntt_psi_ct_trace([1, 2, 3, 4], 7681, 1925)
                 inverse_trace = fast_intt_psi_gs_trace(forward_trace.raw_output, 7681, 1925)
@@ -2559,9 +2762,25 @@ def build_bundle_06() -> None:
                     "scaled": list(inverse_trace.scaled_output),
                     "wrong_root": forward_ntt_psi([1, 2, 3, 4], 7681, 3383),
                 }
+                references = {
+                    "wrong_order": list(forward_trace.normal_order_output),
+                    "correct_order": list(forward_trace.normal_order_output),
+                    "missing_scale": list(inverse_trace.scaled_output),
+                    "scaled": list(inverse_trace.scaled_output),
+                    "wrong_root": list(forward_ntt_psi([1, 2, 3, 4], 7681, 1925)),
+                }
 
                 def preview(mode="wrong_order"):
                     print(mode, "->", failures[mode])
+                    display(
+                        plot_vector_comparison(
+                            failures[mode],
+                            references[mode],
+                            left_label=mode,
+                            right_label="reference",
+                            title=f"{mode} compared with the correct reference",
+                        )
+                    )
 
                 display(widgets.interact(preview, mode=sorted(failures)))
                 """,
