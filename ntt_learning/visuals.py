@@ -39,10 +39,21 @@ SVG_WARN = "#f08a5d"
 SVG_BLUE = "#118ab2"
 
 
+def _full_width_layout(**overrides: str) -> widgets.Layout:
+    settings = {
+        "width": "100%",
+        "max_width": "100%",
+    }
+    settings.update(overrides)
+    return widgets.Layout(**settings)
+
+
 def _widget_chrome(title: str, subtitle: str, view: widgets.Widget) -> widgets.Widget:
     header = widgets.HTML(
         f"""
         <div style="
+            width: 100%;
+            box-sizing: border-box;
             background: linear-gradient(135deg, #f7ede2 0%, #f5cac3 45%, #84a59d 100%);
             color: #102a43;
             padding: 14px 16px;
@@ -54,10 +65,13 @@ def _widget_chrome(title: str, subtitle: str, view: widgets.Widget) -> widgets.W
           <div style="font-size: 12px; margin-top: 4px;">{escape(subtitle)}</div>
         </div>
         """
+        ,
+        layout=_full_width_layout(min_width="0"),
     )
+    view.layout = _full_width_layout(min_width="0")
     box = widgets.VBox(
         [header, view],
-        layout=widgets.Layout(border="1px solid #d9d9d9", overflow="hidden"),
+        layout=_full_width_layout(min_width="0", border="1px solid #d9d9d9", overflow="hidden", align_items="stretch"),
     )
     return box
 
@@ -81,15 +95,20 @@ def _player_widget(
         step=1,
         description="Step",
         continuous_update=False,
-        layout=widgets.Layout(width="420px"),
+        layout=_full_width_layout(min_width="0", flex="1 1 auto"),
     )
     widgets.jslink((play, "value"), (slider, "value"))
 
-    frame_html = widgets.HTML(layout=widgets.Layout(width=width))
-    caption_html = widgets.HTML(layout=widgets.Layout(width=width))
+    play.layout = widgets.Layout(width="auto")
+    frame_html = widgets.HTML(layout=_full_width_layout(min_width="0", overflow="hidden"))
+    caption_html = widgets.HTML(layout=_full_width_layout(min_width="0"))
 
     def render(index: int) -> None:
-        frame_html.value = frames[index]
+        frame_html.value = f"""
+        <div style="width:100%; max-width:100%; overflow:hidden; background:#fff9f2; padding: 10px 14px 14px 14px; box-sizing:border-box;">
+          {frames[index]}
+        </div>
+        """
         caption_html.value = f"""
         <div style="
             background: #fffdf8;
@@ -108,11 +127,18 @@ def _player_widget(
     slider.observe(lambda change: render(change["new"]), names="value")
     render(0)
 
-    controls = widgets.HBox(
-        [play, slider],
-        layout=widgets.Layout(padding="10px 14px", align_items="center"),
+    controls = widgets.VBox(
+        [
+            play,
+            slider,
+        ],
+        layout=_full_width_layout(min_width="0", padding="10px 14px", align_items="stretch"),
     )
-    return _widget_chrome(title, subtitle, widgets.VBox([controls, frame_html, caption_html]))
+    content = widgets.VBox(
+        [controls, frame_html, caption_html],
+        layout=_full_width_layout(min_width="0", align_items="stretch"),
+    )
+    return _widget_chrome(title, subtitle, content)
 
 
 def _svg_box(x: float, y: float, w: float, h: float, label: str, value: str, *, fill: str, stroke: str, stroke_width: float = 2.0) -> str:
@@ -145,7 +171,7 @@ def _convolution_frame_svg(
     height = bottom_y + 110
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" style="background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, title, size=22, weight="800"),
         _svg_text(34, 68, f"Diagonal {diagonal_index}: every highlighted cell lands in output coefficient y{diagonal_index}", size=13, fill="#486581"),
@@ -233,7 +259,7 @@ def _wrap_compare_frame_svg(coefficients: Sequence[int], n: int, step: int) -> s
     neg_y = 300
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" style="background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, "Wraparound Comparison Player", size=22, weight="800"),
         _svg_text(34, 68, f"Current source term: x^{current_index} with coefficient {current_value}", size=13, fill="#486581"),
@@ -314,7 +340,7 @@ def _direct_ntt_frame_svg(values: Sequence[int], modulus: int, psi: int, output_
     final = sum(product for _, _, product in contributions) % modulus
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" style="background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, "Direct NTTψ Contribution Player", size=22, weight="800"),
         _svg_text(34, 68, f"Building output slot j={output_index}, currently consuming input i={input_index}", size=13, fill="#486581"),
@@ -396,7 +422,7 @@ def _butterfly_story_frame_svg(trace: TransformTrace, stage_index: int, pair_ind
     spacing = 92
     start_x = 60
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" style="background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, f"{trace.algorithm.upper()} Butterfly Player", size=22, weight="800"),
         _svg_text(34, 68, f"Stage {stage.stage_index}, active pair ({left}, {right}), zeta={zeta}", size=13, fill="#486581"),

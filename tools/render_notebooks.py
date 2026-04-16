@@ -19,8 +19,139 @@ def normalized_body(text: str) -> str:
     return dedent(text).strip()
 
 
+def theme_cell() -> dict[str, object]:
+    return {
+        "cell_type": "markdown",
+        "metadata": {
+            "pedagogy": {
+                "role": "meta",
+                "difficulty": 1,
+                "kind": "theme",
+                "title": "Notebook Theme",
+            }
+        },
+        "source": """## META
+
+<style>
+.jp-RenderedHTMLCommon h2 {
+  display: none;
+}
+
+.jp-RenderedHTMLCommon .ntt-cell-head {
+  position: relative;
+  margin: 0 0 0.8rem 0;
+  padding: 0.95rem 1rem 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(16,42,67,0.12);
+  box-shadow: 0 8px 24px rgba(16,42,67,0.06);
+  font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+}
+
+.jp-RenderedHTMLCommon .ntt-cell-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.jp-RenderedHTMLCommon .ntt-role-pill,
+.jp-RenderedHTMLCommon .ntt-kind-pill,
+.jp-RenderedHTMLCommon .ntt-difficulty-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jp-RenderedHTMLCommon .ntt-role-meta {
+  background: linear-gradient(135deg, #e2f3ff 0%, #f5fbff 100%);
+}
+
+.jp-RenderedHTMLCommon .ntt-role-mandatory {
+  background: linear-gradient(135deg, #fff0b3 0%, #ffd58a 100%);
+}
+
+.jp-RenderedHTMLCommon .ntt-role-facultative {
+  background: linear-gradient(135deg, #ffe1d6 0%, #ffc9b9 100%);
+}
+
+.jp-RenderedHTMLCommon .ntt-role-pill {
+  color: #102a43;
+  background: rgba(16,42,67,0.1);
+}
+
+.jp-RenderedHTMLCommon .ntt-kind-pill {
+  color: #486581;
+  background: rgba(255,255,255,0.72);
+}
+
+.jp-RenderedHTMLCommon .ntt-difficulty-pill {
+  position: absolute;
+  top: 0.95rem;
+  right: 1rem;
+  color: #102a43;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid rgba(16,42,67,0.08);
+  box-shadow: 0 4px 12px rgba(16,42,67,0.08);
+}
+
+.jp-RenderedHTMLCommon .ntt-cell-title {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 850;
+  color: #102a43;
+  padding-right: 5.3rem;
+}
+
+.jp-RenderedHTMLCommon .ntt-cell-body-hint {
+  margin-top: 0.3rem;
+  font-size: 0.84rem;
+  color: #486581;
+}
+
+.jupyter-widgets.widget-container,
+.jupyter-widgets.widget-box,
+.jupyter-widgets.widget-vbox,
+.jupyter-widgets.widget-hbox {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.widget-html-content svg {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+</style>
+""",
+    }
+
+
+def markdown_header(role: str, difficulty: int, kind: str, title: str) -> str:
+    return dedent(
+        f"""
+        ## {role.upper()}
+
+        <div class="ntt-cell-head ntt-role-{role}">
+          <span class="ntt-difficulty-pill">Level {difficulty}</span>
+          <div class="ntt-cell-row">
+            <span class="ntt-role-pill">{role.upper()}</span>
+            <span class="ntt-kind-pill">{kind.replace("_", " ")}</span>
+          </div>
+          <div class="ntt-cell-title">{title}</div>
+        </div>
+        """
+    ).strip()
+
+
 def markdown(role: str, difficulty: int, kind: str, title: str, body: str) -> dict[str, object]:
-    label = role.upper()
     return {
         "cell_type": "markdown",
         "metadata": {
@@ -31,12 +162,11 @@ def markdown(role: str, difficulty: int, kind: str, title: str, body: str) -> di
                 "title": title,
             }
         },
-        "source": f"## {label} | difficulty {difficulty} | {title}\n\n{normalized_body(body)}\n",
+        "source": f"{markdown_header(role, difficulty, kind, title)}\n\n{normalized_body(body)}\n",
     }
 
 
 def code(role: str, difficulty: int, kind: str, title: str, body: str) -> dict[str, object]:
-    label = role.upper()
     return {
         "cell_type": "code",
         "execution_count": None,
@@ -49,13 +179,19 @@ def code(role: str, difficulty: int, kind: str, title: str, body: str) -> dict[s
             }
         },
         "outputs": [],
-        "source": f"# {label} | difficulty {difficulty} | {title}\n\n{normalized_body(body)}\n",
+        "source": (
+            f"# {role.upper()}\n"
+            f"# title: {title}\n"
+            f"# kind: {kind} | level: {difficulty}\n\n"
+            f"{normalized_body(body)}\n"
+        ),
     }
 
 
 def notebook(title: str, cells: list[dict[str, object]]) -> dict[str, object]:
+    themed_cells = [theme_cell(), *cells]
     return {
-        "cells": cells,
+        "cells": themed_cells,
         "metadata": {
             "kernelspec": {
                 "display_name": "Python 3",
