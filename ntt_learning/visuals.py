@@ -153,6 +153,25 @@ def _svg_text(x: float, y: float, text: str, *, size: int = 14, weight: str = "4
     return f'<text x="{x}" y="{y}" text-anchor="{anchor}" font-size="{size}" font-weight="{weight}" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{fill}">{escape(text)}</text>'
 
 
+def _svg_badge(
+    x: float,
+    y: float,
+    text: str,
+    *,
+    fill: str = "#ffffff",
+    stroke: str = "#cbd2d9",
+    text_fill: str = SVG_INK,
+) -> str:
+    width = max(66.0, 10.0 + len(text) * 7.2)
+    height = 24.0
+    left = x - width / 2
+    top = y - height + 6
+    return f"""
+    <rect x="{left}" y="{top}" width="{width}" height="{height}" rx="12" fill="{fill}" stroke="{stroke}" stroke-width="1.4"></rect>
+    <text x="{x}" y="{y}" text-anchor="middle" font-size="11" font-weight="700" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{text_fill}">{escape(text)}</text>
+    """
+
+
 def _svg_multiline_text(
     x: float,
     y: float,
@@ -200,6 +219,12 @@ def _svg_canvas_open(width: int, height: int) -> str:
         f'preserveAspectRatio="xMinYMin meet" '
         f'style="display:block;width:{width}px;max-width:none;min-width:{width}px;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">'
     )
+
+
+def _wrap_label_geometry(source_x: float, target_x: float, band_top: float, band_bottom: float) -> tuple[float, float]:
+    label_x = (source_x + target_x) / 2
+    label_y = (band_top + band_bottom) / 2
+    return label_x, label_y
 
 
 def _html_token(label: str, value: str, *, fill: str, border: str, text: str = SVG_INK) -> str:
@@ -485,9 +510,12 @@ def _wrap_compare_frame_svg(coefficients: Sequence[int], n: int, step: int) -> s
     neg_label = ("-" if wraps % 2 else "+") + f" wrap {wraps}"
     source_x = 72 + current_index * cell
     target_x = 72 + slot * cell
+    arrow_start_y = top_y + 48
+    cyclic_label_x, cyclic_label_y = _wrap_label_geometry(source_x, target_x, arrow_start_y + 10, cyclic_y - 26)
+    neg_label_x, neg_label_y = _wrap_label_geometry(source_x, target_x, cyclic_y + 56, neg_y - 26)
 
-    parts.append(f'<line x1="{source_x}" y1="{top_y + 48}" x2="{target_x}" y2="{cyclic_y}" stroke="{SVG_BLUE}" stroke-width="4" marker-end="url(#arrow-blue)"></line>')
-    parts.append(f'<line x1="{source_x}" y1="{top_y + 48}" x2="{target_x}" y2="{neg_y}" stroke="{SVG_ACCENT}" stroke-width="4" marker-end="url(#arrow-red)"></line>')
+    parts.append(f'<line x1="{source_x}" y1="{arrow_start_y}" x2="{target_x}" y2="{cyclic_y}" stroke="{SVG_BLUE}" stroke-width="4" marker-end="url(#arrow-blue)"></line>')
+    parts.append(f'<line x1="{source_x}" y1="{arrow_start_y}" x2="{target_x}" y2="{neg_y}" stroke="{SVG_ACCENT}" stroke-width="4" marker-end="url(#arrow-red)"></line>')
     parts.append(f"""
       <defs>
         <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
@@ -498,8 +526,8 @@ def _wrap_compare_frame_svg(coefficients: Sequence[int], n: int, step: int) -> s
         </marker>
       </defs>
     """)
-    parts.append(_svg_text((source_x + target_x) / 2, cyclic_y - 18, cyclic_label, size=12, fill=SVG_BLUE, anchor="middle"))
-    parts.append(_svg_text((source_x + target_x) / 2, neg_y - 18, neg_label, size=12, fill=SVG_ACCENT, anchor="middle"))
+    parts.append(_svg_badge(cyclic_label_x, cyclic_label_y, cyclic_label, fill="#f4fbff", stroke=SVG_BLUE, text_fill=SVG_BLUE))
+    parts.append(_svg_badge(neg_label_x, neg_label_y, neg_label, fill="#fff0ec", stroke=SVG_ACCENT, text_fill=SVG_ACCENT))
     parts.append("</svg>")
     return "".join(parts)
 
