@@ -12,4 +12,5 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+Complete Beginner Guide to the Number Theoretic Transform (NTT).pdf
 .DS_Store
