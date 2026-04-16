@@ -76,6 +76,21 @@ class CourseContractTests(unittest.TestCase):
             payload = read_notebook(notebook)
             sources = [cell_source(cell) for cell in payload["cells"]]
             self.assertTrue(any("Next notebook:" in source for source in sources), f"{notebook}: missing handoff")
+            self.assertTrue(any("](" in source for source in sources if "Next notebook:" in source), f"{notebook}: handoff should be clickable")
+
+    def test_every_notebook_has_route_guardrails(self) -> None:
+        for notebook in ALL_NOTEBOOKS:
+            payload = read_notebook(notebook)
+            route_nav_cells = [
+                cell
+                for cell in payload["cells"]
+                if cell.get("metadata", {}).get("pedagogy", {}).get("kind") == "route_nav"
+            ]
+            self.assertEqual(len(route_nav_cells), 1, f"{notebook}: expected one route navigation cell")
+            source = cell_source(route_nav_cells[0])
+            self.assertIn("Official route chain", source, f"{notebook}: missing route chain")
+            self.assertIn("Restart route:", source, f"{notebook}: missing restart link")
+            self.assertIn("](", source, f"{notebook}: route navigation must contain clickable links")
 
     def test_technical_notebooks_include_interaction_prompts(self) -> None:
         for notebook in TECHNICAL_NOTEBOOKS:
@@ -92,4 +107,3 @@ class CourseContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

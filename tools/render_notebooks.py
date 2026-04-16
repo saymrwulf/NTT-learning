@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from textwrap import dedent
@@ -73,7 +74,124 @@ def notebook(title: str, cells: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def humanize_path_part(text: str) -> str:
+    label = text.replace("_", " ").title()
+    replacements = {
+        "Ntt": "NTT",
+        "Intt": "INTT",
+        "Ct": "CT",
+        "Gs": "GS",
+        "Kyber": "Kyber",
+        "Toy NTT": "Toy NTT",
+    }
+    for source, target in replacements.items():
+        label = label.replace(source, target)
+    return label
+
+
+def notebook_label(path: Path) -> str:
+    if path.parent == Path("notebooks"):
+        return humanize_path_part(path.stem)
+    category = humanize_path_part(path.parent.parent.name)
+    bundle = humanize_path_part(path.parent.name)
+    role = humanize_path_part(path.stem)
+    return f"{category} / {bundle} / {role}"
+
+
+def relative_notebook_link(current_path: Path, target_path: Path) -> str:
+    return Path(os.path.relpath(target_path, start=current_path.parent)).as_posix()
+
+
+def route_chain_markdown(current_path: Path) -> str:
+    lines = []
+    for index, path in enumerate(NOTEBOOK_SEQUENCE, start=1):
+        label = notebook_label(path)
+        if path == current_path:
+            lines.append(f"{index}. **{label}** <- you are here")
+        else:
+            lines.append(f"{index}. [{label}]({relative_notebook_link(current_path, path)})")
+    return "\n".join(lines)
+
+
+def navigation_cell(current_path: Path) -> dict[str, object]:
+    step_index = NOTEBOOK_SEQUENCE.index(current_path)
+    previous_path = NOTEBOOK_SEQUENCE[step_index - 1] if step_index > 0 else None
+    next_path = NOTEBOOK_SEQUENCE[step_index + 1] if step_index + 1 < len(NOTEBOOK_SEQUENCE) else None
+
+    previous_line = (
+        f"- Previous notebook: [{notebook_label(previous_path)}]({relative_notebook_link(current_path, previous_path)})"
+        if previous_path is not None
+        else "- Previous notebook: you are at the start of the supported route"
+    )
+    next_line = (
+        f"- Next notebook: [{notebook_label(next_path)}]({relative_notebook_link(current_path, next_path)})"
+        if next_path is not None
+        else "- Next notebook: you are at the end of the supported route"
+    )
+
+    body = "\n".join(
+        [
+            f"You are at **step {step_index + 1} of {len(NOTEBOOK_SEQUENCE)}** in the only supported route.",
+            "",
+            "Never choose the next notebook manually from the file tree. Use only the links in this cell and the final handoff cell.",
+            "",
+            "**Immediate navigation**",
+            next_line,
+            previous_line,
+            f"- Restart route: [Start Here]({relative_notebook_link(current_path, NOTEBOOK_SEQUENCE[0])})",
+            "",
+            "**Official route chain**",
+            route_chain_markdown(current_path),
+        ]
+    )
+    return markdown("meta", 1, "route_nav", "Route Guardrails", body)
+
+
+def handoff_navigation_cell(current_path: Path) -> dict[str, object]:
+    step_index = NOTEBOOK_SEQUENCE.index(current_path)
+    next_path = NOTEBOOK_SEQUENCE[step_index + 1] if step_index + 1 < len(NOTEBOOK_SEQUENCE) else None
+    previous_path = NOTEBOOK_SEQUENCE[step_index - 1] if step_index > 0 else None
+
+    lines = [f"You finished **{notebook_label(current_path)}**."]
+    lines.append("")
+    lines.append("**Primary next action**")
+    if next_path is None:
+        lines.append("- Next notebook: you are at the end of the supported route")
+    else:
+        lines.append(
+            f"- Next notebook: [Step {step_index + 2} of {len(NOTEBOOK_SEQUENCE)} - {notebook_label(next_path)}]({relative_notebook_link(current_path, next_path)})"
+        )
+    lines.append("")
+    lines.append("**Recovery links if you get lost**")
+    if previous_path is not None:
+        lines.append(
+            f"- Previous notebook: [{notebook_label(previous_path)}]({relative_notebook_link(current_path, previous_path)})"
+        )
+    lines.append(f"- Restart route: [Start Here]({relative_notebook_link(current_path, NOTEBOOK_SEQUENCE[0])})")
+    return markdown("meta", 1, "handoff", "Next Notebook", "\n".join(lines))
+
+
+def inject_route_scaffold(current_path: Path, payload: dict[str, object]) -> dict[str, object]:
+    cells = list(payload["cells"])
+    cells = [cell for cell in cells if cell.get("metadata", {}).get("pedagogy", {}).get("kind") != "route_nav"]
+
+    handoff_found = False
+    for index, cell in enumerate(cells):
+        if cell.get("metadata", {}).get("pedagogy", {}).get("kind") == "handoff":
+            cells[index] = handoff_navigation_cell(current_path)
+            handoff_found = True
+
+    if not handoff_found:
+        cells.append(handoff_navigation_cell(current_path))
+
+    insert_at = 1 if cells else 0
+    cells.insert(insert_at, navigation_cell(current_path))
+    payload["cells"] = cells
+    return payload
+
+
 def write_notebook(relative_path: str, payload: dict[str, object]) -> None:
+    payload = inject_route_scaffold(Path(relative_path), payload)
     destination = REPO_ROOT / relative_path
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
