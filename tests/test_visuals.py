@@ -14,8 +14,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIGDIR))
 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, find_psi
 from ntt_learning.visuals import (
     _convolution_frame_html,
-    _wrap_compare_frame_svg,
-    _wrap_label_geometry,
+    _wrap_compare_frame_html,
     butterfly_story_player,
     direct_ntt_player,
     schoolbook_diagonal_player,
@@ -70,7 +69,6 @@ class VisualUxTests(unittest.TestCase):
         psi = find_psi(order=4, modulus=17)
         trace = fast_ntt_psi_ct_trace([1, 2, 3, 4], modulus=17, psi=psi)
         players = [
-            wraparound_comparison_player([3, 0, 2, 1, 5, 4, 6], n=4),
             direct_ntt_player([1, 2, 3, 4], modulus=17, psi=psi),
             butterfly_story_player(trace),
         ]
@@ -100,36 +98,24 @@ class VisualUxTests(unittest.TestCase):
             self.assertNotEqual(before, frame_html.value)
             self.assertIn("Frame 2 of", caption_html.value)
 
-    def test_wraparound_callouts_do_not_share_title_band(self) -> None:
-        cell = 58
-        top_y = 118
-        cyclic_y = 252
-        neg_y = 348
-        arrow_start_y = top_y + 48
-        current_index = 6
-        slot = current_index % 4
-        source_x = 72 + current_index * cell
-        target_x = 72 + slot * cell
+    def test_wraparound_frame_uses_stable_html_bands(self) -> None:
+        frame = _wrap_compare_frame_html([5, 16, 34, 60, 61, 52, 32], n=4, step=6)
 
-        cyclic_label_x, cyclic_label_y = _wrap_label_geometry(source_x, target_x, arrow_start_y + 10, cyclic_y - 26)
-        neg_label_x, neg_label_y = _wrap_label_geometry(source_x, target_x, cyclic_y + 56, neg_y - 26)
-
-        self.assertLess(cyclic_label_y, cyclic_y - 28)
-        self.assertLess(neg_label_y, neg_y - 28)
-        self.assertGreater(cyclic_label_y, top_y + 24)
-        self.assertGreater(neg_label_y, cyclic_y + 24)
-        self.assertNotAlmostEqual(cyclic_label_y, cyclic_y - 18, delta=1)
-        self.assertNotAlmostEqual(neg_label_y, neg_y - 18, delta=1)
-        self.assertGreater(cyclic_label_x, 0)
-        self.assertGreater(neg_label_x, 0)
-
-    def test_wraparound_frame_uses_badge_callouts_for_wrap_labels(self) -> None:
-        frame = _wrap_compare_frame_svg([5, 16, 34, 60, 61, 52, 32], n=4, step=6)
-
-        self.assertIn('fill="#f4fbff"', frame)
-        self.assertIn('fill="#fff0ec"', frame)
+        self.assertNotIn("<svg", frame)
+        self.assertIn("Active source term: x^6 = 32", frame)
+        self.assertIn("Cyclic move", frame)
+        self.assertIn("Negacyclic move", frame)
+        self.assertIn("Cyclic fold into x^n - 1", frame)
+        self.assertIn("Negacyclic fold into x^n + 1", frame)
         self.assertIn("+ wrap 1", frame)
         self.assertIn("- wrap 1", frame)
+        self.assertIn("display:grid", frame)
+
+    def test_player_caption_has_fixed_min_height(self) -> None:
+        player = wraparound_comparison_player([3, 0, 2, 1, 5, 4, 6], n=4)
+        _, _, caption_html = player_parts(player)
+
+        self.assertIn("min-height: 62px", caption_html.value)
 
 
 if __name__ == "__main__":

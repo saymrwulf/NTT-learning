@@ -114,6 +114,8 @@ def _player_widget(
             background: #fffdf8;
             border-top: 1px solid #e8dcc9;
             padding: 12px 16px;
+            min-height: 62px;
+            box-sizing: border-box;
             font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
             color: #243b53;
             font-size: 13px;
@@ -151,25 +153,6 @@ def _svg_box(x: float, y: float, w: float, h: float, label: str, value: str, *, 
 
 def _svg_text(x: float, y: float, text: str, *, size: int = 14, weight: str = "400", fill: str = SVG_INK, anchor: str = "start") -> str:
     return f'<text x="{x}" y="{y}" text-anchor="{anchor}" font-size="{size}" font-weight="{weight}" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{fill}">{escape(text)}</text>'
-
-
-def _svg_badge(
-    x: float,
-    y: float,
-    text: str,
-    *,
-    fill: str = "#ffffff",
-    stroke: str = "#cbd2d9",
-    text_fill: str = SVG_INK,
-) -> str:
-    width = max(66.0, 10.0 + len(text) * 7.2)
-    height = 24.0
-    left = x - width / 2
-    top = y - height + 6
-    return f"""
-    <rect x="{left}" y="{top}" width="{width}" height="{height}" rx="12" fill="{fill}" stroke="{stroke}" stroke-width="1.4"></rect>
-    <text x="{x}" y="{y}" text-anchor="middle" font-size="11" font-weight="700" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{text_fill}">{escape(text)}</text>
-    """
 
 
 def _svg_multiline_text(
@@ -221,12 +204,6 @@ def _svg_canvas_open(width: int, height: int) -> str:
     )
 
 
-def _wrap_label_geometry(source_x: float, target_x: float, band_top: float, band_bottom: float) -> tuple[float, float]:
-    label_x = (source_x + target_x) / 2
-    label_y = (band_top + band_bottom) / 2
-    return label_x, label_y
-
-
 def _html_token(label: str, value: str, *, fill: str, border: str, text: str = SVG_INK) -> str:
     return f"""
     <div style="
@@ -242,6 +219,8 @@ def _html_token(label: str, value: str, *, fill: str, border: str, text: str = S
         justify-content: center;
         gap: 3px;
         text-align: center;
+        line-height: 1.12;
+        overflow-wrap: anywhere;
     ">
       <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;">{escape(label)}</div>
       <div style="font-size: 19px; font-weight: 800; font-family: Menlo, monospace;">{escape(value)}</div>
@@ -473,68 +452,187 @@ def schoolbook_diagonal_player(left: Sequence[int], right: Sequence[int]) -> wid
     )
 
 
-def _wrap_compare_frame_svg(coefficients: Sequence[int], n: int, step: int) -> str:
+def _wrap_row_html(
+    label: str,
+    cards: Sequence[str],
+    *,
+    background: str,
+    border: str,
+    subtitle: str,
+) -> str:
+    columns = "150px " + " ".join(["minmax(66px, 1fr)"] * len(cards))
+    return f"""
+    <div style="
+        padding: 14px;
+        border-radius: 18px;
+        background: {background};
+        border: 1px solid {border};
+    ">
+      <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:{SVG_INK};">{escape(label)}</div>
+      <div style="font-size:13px; color:#486581; margin-bottom:10px;">{escape(subtitle)}</div>
+      <div style="overflow-x:auto; padding-bottom:4px;">
+        <div style="
+            display:grid;
+            grid-template-columns:{columns};
+            gap:8px;
+            align-items:stretch;
+            min-width:max-content;
+        ">
+          <div style="
+              padding:10px 12px;
+              border-radius:14px;
+              background:rgba(255,255,255,0.72);
+              border:1px solid rgba(16,42,67,0.1);
+              color:#334e68;
+              font-size:13px;
+              font-weight:700;
+              line-height:1.35;
+          ">
+            {escape(label)}
+          </div>
+          {"".join(cards)}
+        </div>
+      </div>
+    </div>
+    """
+
+
+def _wrap_compare_frame_html(coefficients: Sequence[int], n: int, step: int) -> str:
     cyclic_rows = wraparound_contributions(coefficients, n=n, negacyclic=False)
     negacyclic_rows = wraparound_contributions(coefficients, n=n, negacyclic=True)
     flat = [(index, coefficient) for index, coefficient in enumerate(coefficients)]
     current_index, current_value = flat[step]
-    cell = 58
-    width = max(980, len(coefficients) * cell + 200)
-    height = 450
-    top_y = 118
-    cyclic_y = 252
-    neg_y = 348
-
-    parts = [
-        _svg_canvas_open(width, height),
-        f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
-        _svg_text(34, 48, "Wraparound Comparison Player", size=22, weight="800"),
-        _svg_text(34, 74, f"Current source term: x^{current_index} with coefficient {current_value}", size=13, fill="#486581"),
-        _svg_text(34, top_y - 18, "Raw convolution tail", size=14, weight="700"),
-        _svg_text(34, cyclic_y - 18, "Cyclic fold into x^n - 1", size=14, weight="700", fill=SVG_BLUE),
-        _svg_text(34, neg_y - 18, "Negacyclic fold into x^n + 1", size=14, weight="700", fill=SVG_ACCENT),
-    ]
-
-    for index, coefficient in enumerate(coefficients):
-        fill = SVG_HILITE if index == current_index else "#f1f5f9" if index > current_index else "#d8f3dc"
-        stroke = SVG_ACCENT if index == current_index else "#cbd2d9" if index > current_index else SVG_GOOD
-        parts.append(_svg_box(48 + index * cell, top_y, 48, 48, f"x^{index}", str(coefficient), fill=fill, stroke=stroke))
-
-    for slot, row in enumerate(cyclic_rows):
-        parts.append(_svg_box(48 + slot * cell, cyclic_y, 48, 48, f"slot {slot}", str(row["total"]), fill="#e0fbfc", stroke=SVG_BLUE))
-    for slot, row in enumerate(negacyclic_rows):
-        parts.append(_svg_box(48 + slot * cell, neg_y, 48, 48, f"slot {slot}", str(row["total"]), fill="#ffe8d6", stroke=SVG_ACCENT))
-
     wraps, slot = divmod(current_index, n)
     cyclic_label = f"+ wrap {wraps}"
     neg_label = ("-" if wraps % 2 else "+") + f" wrap {wraps}"
-    source_x = 72 + current_index * cell
-    target_x = 72 + slot * cell
-    arrow_start_y = top_y + 48
-    cyclic_label_x, cyclic_label_y = _wrap_label_geometry(source_x, target_x, arrow_start_y + 10, cyclic_y - 26)
-    neg_label_x, neg_label_y = _wrap_label_geometry(source_x, target_x, cyclic_y + 56, neg_y - 26)
 
-    parts.append(f'<line x1="{source_x}" y1="{arrow_start_y}" x2="{target_x}" y2="{cyclic_y}" stroke="{SVG_BLUE}" stroke-width="4" marker-end="url(#arrow-blue)"></line>')
-    parts.append(f'<line x1="{source_x}" y1="{arrow_start_y}" x2="{target_x}" y2="{neg_y}" stroke="{SVG_ACCENT}" stroke-width="4" marker-end="url(#arrow-red)"></line>')
-    parts.append(f"""
-      <defs>
-        <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="{SVG_BLUE}"></polygon>
-        </marker>
-        <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="{SVG_ACCENT}"></polygon>
-        </marker>
-      </defs>
-    """)
-    parts.append(_svg_badge(cyclic_label_x, cyclic_label_y, cyclic_label, fill="#f4fbff", stroke=SVG_BLUE, text_fill=SVG_BLUE))
-    parts.append(_svg_badge(neg_label_x, neg_label_y, neg_label, fill="#fff0ec", stroke=SVG_ACCENT, text_fill=SVG_ACCENT))
-    parts.append("</svg>")
-    return "".join(parts)
+    raw_cards = []
+    for index, coefficient in enumerate(coefficients):
+        active = index == current_index
+        done = index < current_index
+        fill = SVG_HILITE if active else "#d8f3dc" if done else "#f1f5f9"
+        border = SVG_ACCENT if active else SVG_GOOD if done else "#cbd2d9"
+        raw_cards.append(_html_token(f"x^{index}", str(coefficient), fill=fill, border=border))
+
+    cyclic_cards = []
+    for row in cyclic_rows:
+        active = row["slot"] == slot
+        fill = "#cfeffd" if active else "#eaf7fc"
+        border = SVG_BLUE if active else "#9dc7d8"
+        cyclic_cards.append(_html_token(f"slot {row['slot']}", str(row["total"]), fill=fill, border=border))
+
+    negacyclic_cards = []
+    for row in negacyclic_rows:
+        active = row["slot"] == slot
+        fill = "#ffe1d6" if active else "#fff0ea"
+        border = SVG_ACCENT if active else "#e6a98d"
+        negacyclic_cards.append(_html_token(f"slot {row['slot']}", str(row["total"]), fill=fill, border=border))
+
+    flow_cards = f"""
+    <div style="
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+    ">
+      <div style="
+          padding:14px;
+          border-radius:18px;
+          background:#eef8ff;
+          border:1px solid #b8dbef;
+      ">
+        <div style="font-size:16px; font-weight:800; color:{SVG_BLUE}; margin-bottom:8px;">Cyclic move</div>
+        <div style="font-size:14px; color:{SVG_INK}; line-height:1.45;">
+          x^{current_index} -> slot {slot}<br>
+          coefficient {current_value}<br>
+          sign {cyclic_label}
+        </div>
+      </div>
+      <div style="
+          padding:14px;
+          border-radius:18px;
+          background:#fff1eb;
+          border:1px solid #efb7a7;
+      ">
+        <div style="font-size:16px; font-weight:800; color:{SVG_ACCENT}; margin-bottom:8px;">Negacyclic move</div>
+        <div style="font-size:14px; color:{SVG_INK}; line-height:1.45;">
+          x^{current_index} -> slot {slot}<br>
+          coefficient {current_value}<br>
+          sign {neg_label}
+        </div>
+      </div>
+    </div>
+    """
+
+    return f"""
+    <div style="
+        width:100%;
+        max-width:100%;
+        box-sizing:border-box;
+        display:grid;
+        gap:14px;
+        font-family:'Avenir Next', 'Trebuchet MS', sans-serif;
+        color:{SVG_INK};
+    ">
+      <div style="
+          display:flex;
+          flex-wrap:wrap;
+          gap:10px;
+          align-items:center;
+      ">
+        <div style="
+            padding:10px 12px;
+            border-radius:14px;
+            background:#fff3cd;
+            border:2px solid #f2c94c;
+            font-size:15px;
+            font-weight:800;
+        ">
+          Active source term: x^{current_index} = {current_value}
+        </div>
+        <div style="
+            padding:10px 12px;
+            border-radius:14px;
+            background:#eef6ff;
+            border:1px solid #bcd4f6;
+            font-size:13px;
+            color:#334e68;
+        ">
+          Track where this one term lands in x^n - 1 and x^n + 1.
+        </div>
+      </div>
+
+      {_wrap_row_html(
+          "Raw convolution tail",
+          raw_cards,
+          background=SVG_PANEL,
+          border="#e8dcc9",
+          subtitle="Highlighted card = the exact term moving right now.",
+      )}
+
+      {flow_cards}
+
+      {_wrap_row_html(
+          "Cyclic fold into x^n - 1",
+          cyclic_cards,
+          background="#f5fbff",
+          border="#c7e0ec",
+          subtitle=f"x^{current_index} lands in slot {slot} with sign {cyclic_label}.",
+      )}
+
+      {_wrap_row_html(
+          "Negacyclic fold into x^n + 1",
+          negacyclic_cards,
+          background="#fff6f1",
+          border="#efc7b8",
+          subtitle=f"x^{current_index} lands in slot {slot} with sign {neg_label}.",
+      )}
+    </div>
+    """
 
 
 def wraparound_comparison_player(coefficients: Sequence[int], n: int) -> widgets.Widget:
     """Interactive comparison of cyclic and negacyclic folding, one source term at a time."""
-    frames = [_wrap_compare_frame_svg(coefficients, n, step) for step in range(len(coefficients))]
+    frames = [_wrap_compare_frame_html(coefficients, n, step) for step in range(len(coefficients))]
     captions = []
     for index, coefficient in enumerate(coefficients):
         wraps, slot = divmod(index, n)
