@@ -30,33 +30,27 @@ def theme_cell() -> dict[str, object]:
                 "title": "Notebook Theme",
             }
         },
-        "source": """## META
-
-<style>
-.jp-RenderedHTMLCommon h2 {
-  display: none;
-}
-
+        "source": """<style>
 .jp-RenderedHTMLCommon .ntt-cell-head {
   position: relative;
   margin: 0 0 0.8rem 0;
-  padding: 0.95rem 1rem 0.95rem 1rem;
+  padding: 0.95rem 1rem 1rem 1rem;
   border-radius: 16px;
   border: 1px solid rgba(16,42,67,0.12);
   box-shadow: 0 8px 24px rgba(16,42,67,0.06);
   font-family: "Avenir Next", "Trebuchet MS", sans-serif;
 }
 
-.jp-RenderedHTMLCommon .ntt-cell-row {
+.jp-RenderedHTMLCommon .ntt-cell-topline {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.5rem;
   align-items: center;
   margin-bottom: 0.55rem;
 }
 
-.jp-RenderedHTMLCommon .ntt-role-pill,
 .jp-RenderedHTMLCommon .ntt-kind-pill,
+.jp-RenderedHTMLCommon .ntt-route-pill,
 .jp-RenderedHTMLCommon .ntt-difficulty-pill {
   display: inline-flex;
   align-items: center;
@@ -73,21 +67,21 @@ def theme_cell() -> dict[str, object]:
 }
 
 .jp-RenderedHTMLCommon .ntt-role-mandatory {
-  background: linear-gradient(135deg, #fff0b3 0%, #ffd58a 100%);
+  background: linear-gradient(135deg, #fff1b8 0%, #ffd980 100%);
 }
 
 .jp-RenderedHTMLCommon .ntt-role-facultative {
-  background: linear-gradient(135deg, #ffe1d6 0%, #ffc9b9 100%);
-}
-
-.jp-RenderedHTMLCommon .ntt-role-pill {
-  color: #102a43;
-  background: rgba(16,42,67,0.1);
+  background: linear-gradient(135deg, #ffe3d4 0%, #ffc3ae 100%);
 }
 
 .jp-RenderedHTMLCommon .ntt-kind-pill {
-  color: #486581;
-  background: rgba(255,255,255,0.72);
+  color: #102a43;
+  background: rgba(16,42,67,0.08);
+}
+
+.jp-RenderedHTMLCommon .ntt-route-pill {
+  color: #102a43;
+  background: rgba(255,255,255,0.82);
 }
 
 .jp-RenderedHTMLCommon .ntt-difficulty-pill {
@@ -101,6 +95,7 @@ def theme_cell() -> dict[str, object]:
 }
 
 .jp-RenderedHTMLCommon .ntt-cell-title {
+  margin: 0;
   font-size: 1.25rem;
   line-height: 1.25;
   font-weight: 850;
@@ -134,18 +129,36 @@ def theme_cell() -> dict[str, object]:
     }
 
 
+def role_badge(role: str) -> str:
+    labels = {
+        "meta": "route help",
+        "mandatory": "core path",
+        "facultative": "optional",
+    }
+    return labels[role]
+
+
+def kind_badge(kind: str) -> str:
+    labels = {
+        "route_nav": "route map",
+        "orientation": "big picture",
+        "contract": "how to use this",
+        "handoff": "next step",
+        "operations": "local setup",
+    }
+    return labels.get(kind, kind.replace("_", " "))
+
+
 def markdown_header(role: str, difficulty: int, kind: str, title: str) -> str:
     return dedent(
         f"""
-        ## {role.upper()}
-
         <div class="ntt-cell-head ntt-role-{role}">
           <span class="ntt-difficulty-pill">Level {difficulty}</span>
-          <div class="ntt-cell-row">
-            <span class="ntt-role-pill">{role.upper()}</span>
-            <span class="ntt-kind-pill">{kind.replace("_", " ")}</span>
+          <div class="ntt-cell-topline">
+            <span class="ntt-kind-pill">{kind_badge(kind)}</span>
+            <span class="ntt-route-pill">{role_badge(role)}</span>
           </div>
-          <div class="ntt-cell-title">{title}</div>
+          <h2 class="ntt-cell-title">{title}</h2>
         </div>
         """
     ).strip()
@@ -180,9 +193,7 @@ def code(role: str, difficulty: int, kind: str, title: str, body: str) -> dict[s
         },
         "outputs": [],
         "source": (
-            f"# {role.upper()}\n"
-            f"# title: {title}\n"
-            f"# kind: {kind} | level: {difficulty}\n\n"
+            f"# {title}\n\n"
             f"{normalized_body(body)}\n"
         ),
     }
@@ -394,15 +405,14 @@ def build_start_here() -> None:
                     "mandatory",
                     1,
                     "contract",
-                    "Visible Cell Contract",
+                    "How To Read The Notebook Cards",
                     """
-                    Cell labels are not decoration. They tell you how to use the notebook:
+                    The colored card at the top of each cell tells you how to treat that block:
 
-                    - `META` = route, pacing, and handoff
-                    - `MANDATORY` = the official walkthrough
-                    - `FACULTATIVE` = optional deepening only
-                    - difficulty `1-3` is reserved for mandatory work
-                    - difficulty `4-10` is reserved for facultative work
+                    - blue cards keep you on the route and stop you from getting lost
+                    - gold cards are the official walkthrough and should not be skipped
+                    - coral cards are optional deepening once the core path is solid
+                    - the small level badge is only a density warning, not the title of the cell
                     """,
                 ),
                 markdown(

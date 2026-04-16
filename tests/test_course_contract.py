@@ -59,9 +59,26 @@ class CourseContractTests(unittest.TestCase):
                     )
 
                 if cell["cell_type"] == "markdown":
-                    self.assertTrue(source.startswith(f"## {role.upper()}"), f"{notebook}: missing visible label")
+                    if kind == "theme":
+                        self.assertIn("<style>", source, f"{notebook}: theme cell should inject styles")
+                    else:
+                        title = pedagogy.get("title")
+                        self.assertIn('class="ntt-cell-head', source, f"{notebook}: missing notebook chrome")
+                        self.assertIn(f'<h2 class="ntt-cell-title">{title}</h2>', source, f"{notebook}: missing content title")
                 if cell["cell_type"] == "code":
-                    self.assertTrue(source.startswith(f"# {role.upper()}"), f"{notebook}: missing visible label")
+                    title = pedagogy.get("title")
+                    self.assertTrue(source.startswith(f"# {title}"), f"{notebook}: code cell should start with content title")
+
+    def test_role_labels_do_not_appear_as_headlines(self) -> None:
+        for notebook in ALL_NOTEBOOKS:
+            payload = read_notebook(notebook)
+            for cell in payload["cells"]:
+                if cell["cell_type"] != "markdown":
+                    continue
+                source = cell_source(cell)
+                self.assertNotIn("## META", source, f"{notebook}: role label leaked into headline")
+                self.assertNotIn("## MANDATORY", source, f"{notebook}: role label leaked into headline")
+                self.assertNotIn("## FACULTATIVE", source, f"{notebook}: role label leaked into headline")
 
     def test_route_notebooks_stay_pure(self) -> None:
         for notebook in ROUTE_NOTEBOOKS:

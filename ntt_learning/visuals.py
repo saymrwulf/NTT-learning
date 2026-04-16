@@ -153,7 +153,29 @@ def _svg_text(x: float, y: float, text: str, *, size: int = 14, weight: str = "4
     return f'<text x="{x}" y="{y}" text-anchor="{anchor}" font-size="{size}" font-weight="{weight}" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{fill}">{escape(text)}</text>'
 
 
-def _convolution_frame_svg(
+def _html_token(label: str, value: str, *, fill: str, border: str, text: str = SVG_INK) -> str:
+    return f"""
+    <div style="
+        min-width: 56px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 2px solid {border};
+        background: {fill};
+        color: {text};
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        text-align: center;
+    ">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;">{escape(label)}</div>
+      <div style="font-size: 19px; font-weight: 800; font-family: Menlo, monospace;">{escape(value)}</div>
+    </div>
+    """
+
+
+def _convolution_frame_html(
     left: Sequence[int],
     right: Sequence[int],
     diagonal_index: int,
@@ -163,75 +185,206 @@ def _convolution_frame_svg(
     rows = convolution_contributions(left, right)
     current = rows[diagonal_index]
     grid = pairwise_product_grid(left, right)
-    cell = 68
-    left_margin = 78
-    top_margin = 78
-    bottom_y = top_margin + len(left) * cell + 70
-    width = left_margin + len(right) * cell + 120
-    height = bottom_y + 110
+    terms = current["terms"]
+    grid_columns = "72px " + " ".join(["minmax(74px, 1fr)"] * len(right))
+    output_columns = " ".join(["minmax(70px, 1fr)"] * len(rows))
 
-    parts = [
-        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
-        f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
-        _svg_text(34, 48, title, size=22, weight="800"),
-        _svg_text(34, 68, f"Diagonal {diagonal_index}: every highlighted cell lands in output coefficient y{diagonal_index}", size=13, fill="#486581"),
-    ]
+    product_cells = []
+    for column_index, value in enumerate(right):
+        product_cells.append(
+            f"""
+            <div style="padding:8px 6px; text-align:center; font-size:12px; font-weight:800; color:#486581;">
+              b{column_index} = <span style="font-family: Menlo, monospace; color:{SVG_INK};">{value}</span>
+            </div>
+            """
+        )
 
-    for row in range(len(left)):
-        parts.append(_svg_text(54, top_margin + row * cell + 42, f"a{row}", size=12, anchor="middle"))
-    for col in range(len(right)):
-        parts.append(_svg_text(left_margin + col * cell + 28, 64, f"b{col}", size=12, anchor="middle"))
-
-    for row, row_values in enumerate(grid):
-        for col, value in enumerate(row_values):
-            active = row + col == diagonal_index
-            done = row + col < diagonal_index
+    for row_index, row_values in enumerate(grid):
+        product_cells.append(
+            f"""
+            <div style="padding:8px 6px; text-align:center; font-size:12px; font-weight:800; color:#486581;">
+              a{row_index} = <span style="font-family: Menlo, monospace; color:{SVG_INK};">{left[row_index]}</span>
+            </div>
+            """
+        )
+        for column_index, value in enumerate(row_values):
+            active = row_index + column_index == diagonal_index
+            done = row_index + column_index < diagonal_index
             fill = SVG_HILITE if active else "#e6fffa" if done else "#f8f9fa"
-            stroke = SVG_ACCENT if active else SVG_GOOD if done else "#cbd2d9"
-            parts.append(
-                _svg_box(
-                    left_margin + col * cell,
-                    top_margin + row * cell,
-                    56,
-                    56,
-                    f"a{row}·b{col}",
+            border = SVG_ACCENT if active else SVG_GOOD if done else "#cbd2d9"
+            product_cells.append(
+                _html_token(
+                    f"a{row_index}·b{column_index}",
                     str(value),
                     fill=fill,
-                    stroke=stroke,
-                    stroke_width=3.2 if active else 1.8,
+                    border=border,
                 )
             )
 
+    output_cells = []
     for row in rows:
         output_index = int(row["output_index"])
         fill = SVG_HILITE if output_index == diagonal_index else "#d9f0ff" if output_index < diagonal_index else "#f1f5f9"
-        stroke = SVG_ACCENT if output_index == diagonal_index else SVG_BLUE if output_index < diagonal_index else "#cbd2d9"
-        parts.append(
-            _svg_box(
-                left_margin + output_index * cell * 0.92,
-                bottom_y,
-                60,
-                56,
+        border = SVG_ACCENT if output_index == diagonal_index else SVG_BLUE if output_index < diagonal_index else "#cbd2d9"
+        output_cells.append(
+            _html_token(
                 f"y{output_index}",
                 str(row["total"]),
                 fill=fill,
-                stroke=stroke,
-                stroke_width=3.2 if output_index == diagonal_index else 1.8,
+                border=border,
             )
         )
 
-    terms = [f"{term['left_value']}×{term['right_value']}={term['product']}" for term in current["terms"]]
-    equation = " + ".join(terms) if terms else "0"
-    parts.append(_svg_text(34, height - 34, f"Current diagonal sum: {equation} = {current['total']}", size=15, weight="700"))
-    parts.append("</svg>")
-    return "".join(parts)
+    equation_chips = []
+    for term in terms:
+        equation_chips.append(
+            f"""
+            <div style="
+                padding: 8px 10px;
+                border-radius: 999px;
+                background: #fff7d6;
+                border: 1px solid #f2c94c;
+                font-family: Menlo, monospace;
+                font-size: 13px;
+                font-weight: 700;
+                color: {SVG_INK};
+            ">
+              {term["left_value"]} x {term["right_value"]} = {term["product"]}
+            </div>
+            """
+        )
+    equation = " + ".join(
+        f"{term['left_value']}x{term['right_value']}={term['product']}"
+        for term in terms
+    ) or "0"
+
+    return f"""
+    <div style="
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        display: grid;
+        gap: 14px;
+        font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
+        color: {SVG_INK};
+    ">
+      <div style="
+          display:flex;
+          flex-wrap:wrap;
+          gap:10px;
+          align-items:center;
+      ">
+        <div style="
+            padding:10px 12px;
+            border-radius:14px;
+            background:#fff3cd;
+            border:2px solid #f2c94c;
+            font-size:15px;
+            font-weight:800;
+        ">
+          Active diagonal: y{diagonal_index}
+        </div>
+        <div style="
+            padding:10px 12px;
+            border-radius:14px;
+            background:#eef6ff;
+            border:1px solid #bcd4f6;
+            font-size:13px;
+            color:#334e68;
+        ">
+          Highlight every cell where row index + column index = {diagonal_index}
+        </div>
+      </div>
+
+      <div style="
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+          align-items:center;
+      ">
+        <div style="font-size:12px; font-weight:800; color:#486581;">Left polynomial</div>
+        {"".join(_html_token(f"a{i}", str(value), fill="#edf6f9", border="#8ecae6") for i, value in enumerate(left))}
+      </div>
+
+      <div style="
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+          align-items:center;
+      ">
+        <div style="font-size:12px; font-weight:800; color:#486581;">Right polynomial</div>
+        {"".join(_html_token(f"b{i}", str(value), fill="#fef6e4", border="#f6bd60") for i, value in enumerate(right))}
+      </div>
+
+      <div style="
+          padding:14px;
+          border-radius:18px;
+          background:{SVG_PANEL};
+          border:1px solid #e8dcc9;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+      ">
+        <div style="font-size:16px; font-weight:800; margin-bottom:10px;">{escape(title)}</div>
+        <div style="font-size:13px; color:#486581; margin-bottom:12px;">
+          Each highlighted product belongs to the same output coefficient.
+        </div>
+        <div style="overflow-x:auto; padding-bottom:4px;">
+          <div style="
+              display:grid;
+              grid-template-columns:{grid_columns};
+              gap:8px;
+              align-items:stretch;
+              min-width:max-content;
+          ">
+            <div></div>
+            {"".join(product_cells)}
+          </div>
+        </div>
+      </div>
+
+      <div style="
+          padding:14px;
+          border-radius:18px;
+          background:#f8fbff;
+          border:1px solid #d6e4f0;
+      ">
+        <div style="font-size:16px; font-weight:800; margin-bottom:10px;">Output coefficients after this sweep</div>
+        <div style="display:grid; grid-template-columns:{output_columns}; gap:8px;">
+          {"".join(output_cells)}
+        </div>
+      </div>
+
+      <div style="
+          padding:14px;
+          border-radius:18px;
+          background:#fffdf8;
+          border:1px solid #ecdcc5;
+      ">
+        <div style="font-size:16px; font-weight:800; margin-bottom:10px;">Current diagonal terms</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          {"".join(equation_chips) or '<div style="font-size:13px; color:#486581;">No terms yet.</div>'}
+        </div>
+        <div style="
+            padding:12px 14px;
+            border-radius:14px;
+            background:#102a43;
+            color:white;
+            font-family: Menlo, monospace;
+            font-size:14px;
+            font-weight:700;
+            overflow-wrap:anywhere;
+        ">
+          y{diagonal_index} = {escape(equation)} = {current["total"]}
+        </div>
+      </div>
+    </div>
+    """
 
 
 def schoolbook_diagonal_player(left: Sequence[int], right: Sequence[int]) -> widgets.Widget:
     """Interactive diagonal-by-diagonal walkthrough of schoolbook multiplication."""
     rows = convolution_contributions(left, right)
     frames = [
-        _convolution_frame_svg(left, right, diagonal_index=index, title="Schoolbook Multiplication As A Moving Diagonal")
+        _convolution_frame_html(left, right, diagonal_index=index, title="Schoolbook multiplication as a moving diagonal")
         for index in range(len(rows))
     ]
     captions = [
