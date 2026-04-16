@@ -105,7 +105,7 @@ def _player_widget(
 
     def render(index: int) -> None:
         frame_html.value = f"""
-        <div style="width:100%; max-width:100%; overflow:hidden; background:#fff9f2; padding: 10px 14px 14px 14px; box-sizing:border-box;">
+        <div style="width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; background:#fff9f2; padding: 10px 14px 14px 14px; box-sizing:border-box;">
           {frames[index]}
         </div>
         """
@@ -151,6 +151,55 @@ def _svg_box(x: float, y: float, w: float, h: float, label: str, value: str, *, 
 
 def _svg_text(x: float, y: float, text: str, *, size: int = 14, weight: str = "400", fill: str = SVG_INK, anchor: str = "start") -> str:
     return f'<text x="{x}" y="{y}" text-anchor="{anchor}" font-size="{size}" font-weight="{weight}" font-family="Avenir Next, Trebuchet MS, sans-serif" fill="{fill}">{escape(text)}</text>'
+
+
+def _svg_multiline_text(
+    x: float,
+    y: float,
+    text: str,
+    *,
+    max_chars: int = 42,
+    line_height: int = 16,
+    size: int = 14,
+    weight: str = "400",
+    fill: str = SVG_INK,
+    anchor: str = "start",
+) -> str:
+    words = text.split()
+    if not words:
+        return ""
+
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if len(candidate) <= max_chars:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+
+    return "".join(
+        _svg_text(
+            x,
+            y + index * line_height,
+            line,
+            size=size,
+            weight=weight,
+            fill=fill,
+            anchor=anchor,
+        )
+        for index, line in enumerate(lines)
+    )
+
+
+def _svg_canvas_open(width: int, height: int) -> str:
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+        f'preserveAspectRatio="xMinYMin meet" '
+        f'style="display:block;width:{width}px;max-width:none;min-width:{width}px;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">'
+    )
 
 
 def _html_token(label: str, value: str, *, fill: str, border: str, text: str = SVG_INK) -> str:
@@ -406,19 +455,19 @@ def _wrap_compare_frame_svg(coefficients: Sequence[int], n: int, step: int) -> s
     current_index, current_value = flat[step]
     cell = 58
     width = max(980, len(coefficients) * cell + 200)
-    height = 390
-    top_y = 78
-    cyclic_y = 210
-    neg_y = 300
+    height = 450
+    top_y = 118
+    cyclic_y = 252
+    neg_y = 348
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        _svg_canvas_open(width, height),
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, "Wraparound Comparison Player", size=22, weight="800"),
-        _svg_text(34, 68, f"Current source term: x^{current_index} with coefficient {current_value}", size=13, fill="#486581"),
-        _svg_text(34, top_y - 14, "Raw convolution tail", size=14, weight="700"),
-        _svg_text(34, cyclic_y - 14, "Cyclic fold into x^n - 1", size=14, weight="700", fill=SVG_BLUE),
-        _svg_text(34, neg_y - 14, "Negacyclic fold into x^n + 1", size=14, weight="700", fill=SVG_ACCENT),
+        _svg_text(34, 74, f"Current source term: x^{current_index} with coefficient {current_value}", size=13, fill="#486581"),
+        _svg_text(34, top_y - 18, "Raw convolution tail", size=14, weight="700"),
+        _svg_text(34, cyclic_y - 18, "Cyclic fold into x^n - 1", size=14, weight="700", fill=SVG_BLUE),
+        _svg_text(34, neg_y - 18, "Negacyclic fold into x^n + 1", size=14, weight="700", fill=SVG_ACCENT),
     ]
 
     for index, coefficient in enumerate(coefficients):
@@ -493,7 +542,7 @@ def _direct_ntt_frame_svg(values: Sequence[int], modulus: int, psi: int, output_
     final = sum(product for _, _, product in contributions) % modulus
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        _svg_canvas_open(width, height),
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, "Direct NTTψ Contribution Player", size=22, weight="800"),
         _svg_text(34, 68, f"Building output slot j={output_index}, currently consuming input i={input_index}", size=13, fill="#486581"),
@@ -537,8 +586,27 @@ def _direct_ntt_frame_svg(values: Sequence[int], modulus: int, psi: int, output_
         parts.append(_svg_box(520 + index * 90, boxes_y, 74, 54, f"a{index}·w", str(product), fill=fill, stroke=stroke))
         parts.append(_svg_text(556 + index * 90, boxes_y - 10, f"factor {factor}", size=11, anchor="middle"))
 
-    parts.append(_svg_text(34, height - 60, f"Current partial sum for j={output_index}: {partial} mod {modulus}", size=15, weight="700"))
-    parts.append(_svg_text(34, height - 34, f"Completed output slot y{output_index}: {final} mod {modulus}", size=15, weight="700", fill=SVG_ACCENT))
+    parts.append(
+        _svg_multiline_text(
+            34,
+            height - 68,
+            f"Current partial sum for j={output_index}: {partial} mod {modulus}",
+            max_chars=52,
+            size=15,
+            weight="700",
+        )
+    )
+    parts.append(
+        _svg_multiline_text(
+            34,
+            height - 36,
+            f"Completed output slot y{output_index}: {final} mod {modulus}",
+            max_chars=52,
+            size=15,
+            weight="700",
+            fill=SVG_ACCENT,
+        )
+    )
     parts.append("</svg>")
     return "".join(parts)
 
@@ -575,7 +643,7 @@ def _butterfly_story_frame_svg(trace: TransformTrace, stage_index: int, pair_ind
     spacing = 92
     start_x = 60
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMin meet" width="100%" style="display:block;width:100%;max-width:100%;height:auto;background:{SVG_BG}; border-radius:0 0 14px 14px;">',
+        _svg_canvas_open(width, height),
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" rx="18" fill="{SVG_PANEL}" stroke="#e8dcc9" stroke-width="2"></rect>',
         _svg_text(34, 48, f"{trace.algorithm.upper()} Butterfly Player", size=22, weight="800"),
         _svg_text(34, 68, f"Stage {stage.stage_index}, active pair ({left}, {right}), zeta={zeta}", size=13, fill="#486581"),
@@ -603,8 +671,29 @@ def _butterfly_story_frame_svg(trace: TransformTrace, stage_index: int, pair_ind
     x_right = start_x + right * spacing + 32
     parts.append(f'<line x1="{x_left}" y1="{input_y + 62}" x2="{x_right}" y2="{input_y + 62}" stroke="{SVG_ACCENT}" stroke-width="4"></line>')
     parts.append(_svg_text((x_left + x_right) / 2, 196, f"pair ({left}, {right})", size=12, weight="700", fill=SVG_ACCENT, anchor="middle"))
-    parts.append(_svg_text((x_left + x_right) / 2, 214, f"inputs -> outputs = ({stage.input_values[left]}, {stage.input_values[right]}) -> ({stage.output_values[left]}, {stage.output_values[right]})", size=11, anchor="middle"))
-    parts.append(_svg_text((x_left + x_right) / 2, 232, stage.note, size=11, anchor="middle", fill="#486581"))
+    parts.append(
+        _svg_multiline_text(
+            (x_left + x_right) / 2,
+            214,
+            f"inputs -> outputs = ({stage.input_values[left]}, {stage.input_values[right]}) -> ({stage.output_values[left]}, {stage.output_values[right]})",
+            max_chars=34,
+            line_height=14,
+            size=11,
+            anchor="middle",
+        )
+    )
+    parts.append(
+        _svg_multiline_text(
+            (x_left + x_right) / 2,
+            242,
+            stage.note,
+            max_chars=36,
+            line_height=14,
+            size=11,
+            anchor="middle",
+            fill="#486581",
+        )
+    )
     parts.append("</svg>")
     return "".join(parts)
 
