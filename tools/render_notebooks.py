@@ -455,12 +455,12 @@ def build_bundle_01() -> None:
                 "mandatory",
                 2,
                 "demo",
-                "See The Product Grid And The Diagonal Sums",
+                "Play The Diagonal Sweep",
                 """
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import convolution_contributions, schoolbook_convolution
-                from ntt_learning.visuals import plot_convolution_grid
+                from ntt_learning.visuals import plot_convolution_grid, schoolbook_diagonal_player
 
                 left = [1, 2, 3, 4]
                 right = [5, 6, 7, 8]
@@ -470,6 +470,7 @@ def build_bundle_01() -> None:
                 for row in convolution_contributions(left, right):
                     print(row)
 
+                display(schoolbook_diagonal_player(left, right))
                 fig = plot_convolution_grid(left, right, title="Schoolbook products for [1,2,3,4] * [5,6,7,8]")
                 display(fig)
                 """,
@@ -492,12 +493,12 @@ def build_bundle_01() -> None:
                 "mandatory",
                 2,
                 "demo",
-                "See Cyclic And Negacyclic Folding Side By Side",
+                "Play The Wraparound Step By Step",
                 """
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import negacyclic_multiply, schoolbook_convolution, wraparound_contributions
-                from ntt_learning.visuals import plot_wraparound
+                from ntt_learning.visuals import plot_wraparound, wraparound_comparison_player
 
                 left = [1, 2, 3, 4]
                 right = [5, 6, 7, 8]
@@ -512,6 +513,7 @@ def build_bundle_01() -> None:
                 for row in wraparound_contributions(raw, n=4, negacyclic=True):
                     print(row)
 
+                display(wraparound_comparison_player(raw, n=4))
                 display(plot_wraparound(raw, n=4, negacyclic=False, title="Cyclic folding into x^4 - 1"))
                 display(plot_wraparound(raw, n=4, negacyclic=True, title="Negacyclic folding into x^4 + 1"))
                 """,
@@ -599,7 +601,7 @@ def build_bundle_01() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import negacyclic_multiply, schoolbook_convolution
-                from ntt_learning.visuals import plot_convolution_grid, plot_wraparound
+                from ntt_learning.visuals import plot_convolution_grid, plot_wraparound, schoolbook_diagonal_player, wraparound_comparison_player
 
                 left = [3, 0, 2, 1]
                 right = [1, 4, 0, 2]
@@ -607,6 +609,8 @@ def build_bundle_01() -> None:
 
                 print("raw convolution:", raw)
                 print("negacyclic result:", negacyclic_multiply(left, right, n=4))
+                display(schoolbook_diagonal_player(left, right))
+                display(wraparound_comparison_player(raw, n=4))
                 display(plot_convolution_grid(left, right, title="Prediction check grid"))
                 display(plot_wraparound(raw, n=4, negacyclic=True, title="Prediction check fold"))
                 """,
@@ -636,10 +640,11 @@ def build_bundle_01() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import schoolbook_convolution
-                from ntt_learning.visuals import plot_wraparound
+                from ntt_learning.visuals import plot_wraparound, wraparound_comparison_player
 
                 raw = schoolbook_convolution([2, 5, 0, 1], [1, 0, 3, 2])
                 print("raw convolution:", raw)
+                display(wraparound_comparison_player(raw, n=4))
                 display(plot_wraparound(raw, n=4, negacyclic=True, title="Trace one tail coefficient by eye"))
                 """,
             ),
@@ -815,10 +820,11 @@ def build_bundle_01() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import schoolbook_convolution
-                from ntt_learning.visuals import plot_wraparound
+                from ntt_learning.visuals import plot_wraparound, wraparound_comparison_player
 
                 raw = schoolbook_convolution([1, 2, 3, 4], [5, 6, 7, 8])
                 print("raw convolution:", raw)
+                display(wraparound_comparison_player(raw, n=4))
                 display(plot_wraparound(raw, n=4, negacyclic=False, title="Positive wrap into x^4 - 1"))
                 display(plot_wraparound(raw, n=4, negacyclic=True, title="Negative wrap into x^4 + 1"))
                 """,
@@ -926,7 +932,7 @@ def build_bundle_02() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import find_primitive_root, find_psi, ntt_psi_exponent_grid, ntt_psi_matrix
-                from ntt_learning.visuals import plot_ntt_psi_exponent_heatmap, plot_ntt_psi_matrix_heatmap
+                from ntt_learning.visuals import direct_ntt_player, plot_ntt_psi_exponent_heatmap, plot_ntt_psi_matrix_heatmap
 
                 modulus = 17
                 n = 4
@@ -942,6 +948,7 @@ def build_bundle_02() -> None:
                 for row in ntt_psi_matrix(n, modulus, psi):
                     print(row)
 
+                display(direct_ntt_player([1, 2, 3, 4], modulus, psi))
                 display(plot_ntt_psi_exponent_heatmap(n, title="Exponents 2ij + i for n=4"))
                 display(plot_ntt_psi_matrix_heatmap(n, modulus, psi, title="Concrete NTT_psi matrix in Z_17"))
                 """,
@@ -962,7 +969,10 @@ def build_bundle_02() -> None:
                 "demo",
                 "Run A Direct NTTψ / INTTψ Round Trip",
                 """
+                from IPython.display import display
+
                 from ntt_learning.toy_ntt import find_psi, forward_ntt_psi, inverse_ntt_psi
+                from ntt_learning.visuals import direct_ntt_player
 
                 signal = [1, 2, 3, 4]
                 modulus = 17
@@ -972,6 +982,7 @@ def build_bundle_02() -> None:
                 print("signal:", signal)
                 print("spectrum:", spectrum)
                 print("inverse recovery:", inverse_ntt_psi(spectrum, modulus, psi))
+                display(direct_ntt_player(signal, modulus, psi))
                 """,
             ),
             code(
@@ -1079,6 +1090,7 @@ def build_bundle_02() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import find_psi, forward_ntt_psi, inverse_ntt_psi
+                from ntt_learning.visuals import direct_ntt_player
 
                 modulus = 17
                 psi = find_psi(4, modulus)
@@ -1089,6 +1101,7 @@ def build_bundle_02() -> None:
                     print("signal:", signal)
                     print("spectrum:", spectrum)
                     print("inverse:", inverse_ntt_psi(spectrum, modulus, psi))
+                    display(direct_ntt_player(signal, modulus, psi))
 
                 display(
                     widgets.interact(
@@ -1449,7 +1462,7 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, forward_ntt_psi
-                from ntt_learning.visuals import interactive_trace, plot_butterfly_network, plot_trace_overview
+                from ntt_learning.visuals import butterfly_story_player, interactive_trace, plot_butterfly_network, plot_trace_overview
 
                 signal = [1, 2, 3, 4]
                 modulus = 7681
@@ -1459,6 +1472,7 @@ def build_bundle_03() -> None:
                 print("raw CT output (BO):", trace.raw_output)
                 print("bit-reversed back to NO:", trace.normal_order_output)
                 print("direct NTT_psi:", forward_ntt_psi(signal, modulus, psi))
+                display(butterfly_story_player(trace))
                 display(plot_trace_overview(trace, title="CT overview for [1,2,3,4]"))
                 display(plot_butterfly_network(trace, title="Full CT network for [1,2,3,4]"))
                 display(interactive_trace(trace, title="CT forward trace"))
@@ -1505,7 +1519,7 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace, find_psi
-                from ntt_learning.visuals import interactive_trace, plot_butterfly_network, plot_trace_overview
+                from ntt_learning.visuals import butterfly_story_player, interactive_trace, plot_butterfly_network, plot_trace_overview
 
                 signal = [0, 1, 2, 3, 4, 5, 6, 7]
                 modulus = 97
@@ -1515,6 +1529,7 @@ def build_bundle_03() -> None:
                 print("psi:", psi)
                 print("BO output:", trace.raw_output)
                 print("NO output:", trace.normal_order_output)
+                display(butterfly_story_player(trace))
                 display(plot_trace_overview(trace, title="Three CT stages for n=8"))
                 display(plot_butterfly_network(trace, title="Full CT network for n=8"))
                 display(interactive_trace(trace, title="n=8 CT stage explorer"))
@@ -1604,9 +1619,10 @@ def build_bundle_03() -> None:
                 from IPython.display import display
 
                 from ntt_learning.toy_ntt import fast_ntt_psi_ct_trace
-                from ntt_learning.visuals import interactive_trace
+                from ntt_learning.visuals import butterfly_story_player, interactive_trace
 
                 trace = fast_ntt_psi_ct_trace([1, 2, 3, 4], 7681, 1925)
+                display(butterfly_story_player(trace))
                 display(interactive_trace(trace, title="Check your n=4 prediction"))
                 """,
             ),
