@@ -1310,6 +1310,22 @@ def build_bundle_03() -> None:
                 "mandatory",
                 3,
                 "demo",
+                "See The Schedule Geometry Before The Numbers",
+                """
+                from IPython.display import display
+
+                from ntt_learning.visuals import plot_stage_pairing_map, plot_stage_schedule
+
+                display(plot_stage_schedule(8, title="CT schedule skeleton for n=8"))
+                display(plot_stage_pairing_map(8, 2, title="Stage 1 pairings for n=8"))
+                display(plot_stage_pairing_map(8, 4, title="Stage 2 pairings for n=8"))
+                display(plot_stage_pairing_map(8, 8, title="Stage 3 pairings for n=8"))
+                """,
+            ),
+            code(
+                "mandatory",
+                3,
+                "demo",
                 "Trace The Exact n=4 Paper Example",
                 """
                 from IPython.display import display
@@ -2244,6 +2260,22 @@ def build_bundle_05() -> None:
 
                 That means a primitive `256`-th root exists, but a primitive `512`-th root does not.
                 So the clean full-length `ψ` story from the toy negative-wrapped transform does not lift over unchanged.
+                """,
+            ),
+            code(
+                "mandatory",
+                3,
+                "demo",
+                "See The Stage Skeleton For n=16 And n=256",
+                """
+                from IPython.display import display
+
+                from ntt_learning.visuals import plot_stage_pairing_map, plot_stage_schedule
+
+                display(plot_stage_schedule(16, title="Readable schedule skeleton for n=16"))
+                display(plot_stage_pairing_map(16, 2, title="Stage 1 geometry for n=16"))
+                display(plot_stage_pairing_map(16, 16, title="Final stage geometry for n=16"))
+                display(plot_stage_schedule(256, title="Kyber-scale stage skeleton for n=256"))
                 """,
             ),
             code(

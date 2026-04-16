@@ -43,6 +43,7 @@ NOTEBOOK_SEQUENCE = [
 ]
 
 REQUIRED_SCRIPT_NAMES = [
+    "app.sh",
     "bootstrap.sh",
     "start.sh",
     "stop.sh",

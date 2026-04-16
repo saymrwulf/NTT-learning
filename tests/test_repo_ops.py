@@ -15,16 +15,21 @@ class RepoOpsTests(unittest.TestCase):
             mode = script_path.stat().st_mode
             self.assertTrue(mode & stat.S_IXUSR, f"{script_name} is not executable")
 
-    def test_status_script_reports_repo_state(self) -> None:
-        completed = subprocess.run(
+    def test_status_commands_report_repo_state(self) -> None:
+        for command in (
+            ["bash", "scripts/app.sh", "status"],
             ["bash", "scripts/status.sh"],
-            cwd=REPO_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        self.assertIn("repo_root=", completed.stdout)
-        self.assertIn("notebooks_dir=", completed.stdout)
+        ):
+            with self.subTest(command=" ".join(command)):
+                completed = subprocess.run(
+                    command,
+                    cwd=REPO_ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertIn("repo_root=", completed.stdout)
+                self.assertIn("notebooks_dir=", completed.stdout)
 
 
 if __name__ == "__main__":

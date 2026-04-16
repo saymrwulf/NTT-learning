@@ -22,6 +22,7 @@ from .toy_ntt import (
     ntt_psi_matrix,
     pairwise_product_grid,
     pointwise_multiply,
+    stage_pairings,
     wraparound_contributions,
 )
 
@@ -376,6 +377,120 @@ def plot_butterfly_network(trace: TransformTrace, title: str | None = None):
 
     ax.set_xlim(-1.1, x_positions[-1] + 1.1)
     ax.set_ylim(-len(trace.input_values) + 0.2, 1.8)
+    fig.tight_layout()
+    return fig
+
+
+def plot_stage_pairing_map(
+    length: int,
+    block_size: int,
+    *,
+    title: str | None = None,
+):
+    """Plot which indices talk to each other in one butterfly stage."""
+    if title is None:
+        title = f"Stage Pairing Map (n={length}, block={block_size})"
+
+    pairs = stage_pairings(length, block_size)
+    fig, ax = plt.subplots(figsize=(10, max(4.2, length * 0.55)))
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.axis("off")
+
+    for index in range(length):
+        ax.text(
+            0,
+            -index,
+            f"{index}",
+            ha="center",
+            va="center",
+            fontsize=10,
+            family="monospace",
+            bbox={"boxstyle": "round,pad=0.25", "facecolor": "#edf6f9", "edgecolor": "#264653"},
+        )
+
+    colors = ["#264653", "#2a9d8f", "#e76f51", "#8d99ae", "#c1121f", "#3a86ff"]
+    for pair_index, (left, right) in enumerate(pairs):
+        color = colors[pair_index % len(colors)]
+        ax.plot([0.6, 4.2], [-left, -right], color=color, linewidth=2.4)
+        ax.text(
+            5.4,
+            -((left + right) / 2),
+            f"{left} <-> {right}",
+            ha="center",
+            va="center",
+            fontsize=9,
+            family="monospace",
+            bbox={"boxstyle": "round,pad=0.22", "facecolor": "#ffffff", "edgecolor": color},
+        )
+
+    ax.text(0, 1.0, "indices", ha="center", va="center", fontsize=11, fontweight="bold")
+    ax.text(5.4, 1.0, "pairs", ha="center", va="center", fontsize=11, fontweight="bold")
+    ax.set_xlim(-1.0, 6.8)
+    ax.set_ylim(-length + 0.2, 1.8)
+    fig.tight_layout()
+    return fig
+
+
+def plot_stage_schedule(length: int, title: str | None = None):
+    """Plot the full stage schedule for a power-of-two transform length."""
+    if length <= 0 or length & (length - 1):
+        raise ValueError("plot_stage_schedule requires a power-of-two length")
+    if title is None:
+        title = f"Butterfly Stage Schedule For n={length}"
+
+    stages = []
+    block_size = 2
+    stage_index = 1
+    while block_size <= length:
+        stages.append(
+            {
+                "stage": stage_index,
+                "block_size": block_size,
+                "pair_distance": block_size // 2,
+                "pair_count": len(stage_pairings(length, block_size)),
+            }
+        )
+        block_size *= 2
+        stage_index += 1
+
+    fig, ax = plt.subplots(figsize=(11, max(4.5, len(stages) * 0.95)))
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.axis("off")
+
+    headers = ["stage", "block", "distance", "pairs", "what happens"]
+    x_positions = [0, 2.0, 4.0, 6.0, 9.2]
+    for x, header in zip(x_positions, headers):
+        ax.text(x, 1.0, header, ha="center", va="center", fontsize=11, fontweight="bold")
+
+    for row_index, row in enumerate(stages):
+        y = -row_index
+        explanation = f"indices {row['pair_distance']} apart talk inside blocks of {row['block_size']}"
+        values = [
+            str(row["stage"]),
+            str(row["block_size"]),
+            str(row["pair_distance"]),
+            str(row["pair_count"]),
+            explanation,
+        ]
+        for x, value in zip(x_positions, values):
+            ax.text(
+                x,
+                y,
+                value,
+                ha="center",
+                va="center",
+                fontsize=10,
+                family="monospace",
+                bbox={
+                    "boxstyle": "round,pad=0.24",
+                    "facecolor": "#edf6f9" if x < 8 else "#ffffff",
+                    "edgecolor": "#264653",
+                    "linewidth": 1.0,
+                },
+            )
+
+    ax.set_xlim(-1.0, 12.3)
+    ax.set_ylim(-len(stages) + 0.2, 1.7)
     fig.tight_layout()
     return fig
 

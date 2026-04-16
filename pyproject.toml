@@ -9,6 +9,7 @@ description = "Local-first notebooks for learning the Number Theoretic Transform
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "ipykernel>=6.29",
   "jupyterlab>=4.2,<5",
   "ipywidgets>=8.1,<9",
   "matplotlib>=3.9,<4",
@@ -21,4 +22,3 @@ dev = [
 
 [tool.setuptools]
 packages = ["ntt_learning"]
-
