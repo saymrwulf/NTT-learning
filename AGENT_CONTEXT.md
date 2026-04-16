@@ -1,227 +1,333 @@
 # Agent Context
 
-  This file exists so a restarted coding agent can get up to speed quickly in `NTT-learning` without relying on vanished session memory.
+This file exists so a restarted coding agent can recover quickly in `NTT-learning` without relying on vanished session memory.
 
-  ## Project Identity
+## Identity
 
-  - Project: `NTT-learning`
-  - Directory: `/Users/oho/GitClone/CodexProjects/NTT-learning`
-  - Goal: build a local-first, notebook-first learning platform for understanding the Number Theoretic Transform in the context of Kyber, with special focus on:
-    - forward NTT
-    - inverse NTT
-    - butterfly structure
-    - Cooley-Tukey vs Gentleman-Sande / Sande-style inverse flow
-    - layer-by-layer data movement
-    - how the algorithm actually plays out in arrays
-  - The project should follow the same high standard as `QuantumLearning` in pedagogy, guardrails, notebook design, testing, and local operations.
+- Project: `NTT-learning`
+- Directory: `/Users/oho/GitClone/CodexProjects/NTT-learning`
+- GitHub: `https://github.com/saymrwulf/NTT-learning`
+- Branch: `master` only. Do not assume `main`.
+- Goal: build the best notebook-first tutorial for understanding NTT / iNTT, especially in the Kyber context, with the real emphasis on:
+  - convolution and negacyclic structure
+  - direct transform definitions
+  - butterfly mechanics
+  - CT vs GS flow
+  - ordering / bit-reversal / scaling
+  - Kyber-specific mapping only after the learner sees the mechanics
 
-  ## Core Teaching Judgement
+Current course shape:
 
-  This topic is confusing because most explanations blur together three different things:
+- `27` canonical notebooks total
+- `3` route notebooks:
+  - `notebooks/START_HERE.ipynb`
+  - `notebooks/COURSE_BLUEPRINT.ipynb`
+  - `notebooks/COURSE_COMPLETE.ipynb`
+- `24` technical notebooks across `6` bundles:
+  - `foundations/01_convolution_to_toy_ntt`
+  - `foundations/02_negative_wrapped_ntt`
+  - `butterfly_mechanics/03_fast_forward_ct`
+  - `butterfly_mechanics/04_fast_inverse_gs`
+  - `kyber_mapping/05_kyber_ntt_and_base_multiplication`
+  - `professional/06_debugging_ntt_failures`
 
-  1. the algebraic purpose of NTT
-  2. the in-place butterfly dataflow
-  3. the Kyber-specific implementation conventions
+## Non-Negotiable User Rules
 
-  The course must separate those cleanly.
+These are not optional style preferences. Future agents should assume these are hard requirements.
 
-  A learner should not be forced to jump straight into Kyber’s real implementation. The correct staircase is:
+- Read this file first on restart.
+- Inspect `git status --short --branch`, `git log --oneline -8`, and the repo tree before acting.
+- Work autonomously after that. Do not ask the user to re-explain the project state.
+- Always commit and push before returning a final answer.
+- Never return with a dirty worktree. Final `git status --short` should be empty.
+- UX is first-order priority. If the learner can get lost, the UX is wrong.
+- The user is strongly visual and struggles when asked to imagine array motion abstractly.
+- Abstractions are bad for this teaching goal unless they come after concrete motion and visuals.
+- The course should be blunt, graphical, dynamic, and foolproof.
+- If one animation or notebook interaction breaks, assume the bug may be systemic across other players and test broadly.
 
-  1. ordinary polynomial multiplication / convolution
-  2. negacyclic multiplication
-  3. tiny toy NTT with very small `n`
-  4. butterfly mechanics in isolation
-  5. forward vs inverse flow side by side
-  6. only then Kyber-specific parameters and indexing
-  7. only then the real implementation patterns
+## Core Teaching Judgement
 
-  ## Official Course Contract
+The course must keep these stories separate:
 
-  The project must have one supported end-to-end walkthrough only.
+1. the algebraic purpose of the transform
+2. the local in-place butterfly dataflow
+3. the Kyber-specific implementation conventions
 
-  Inside notebooks, the visible cell contract must be explicit:
+The learner staircase should remain:
 
-  - `META` cells are route/objective/pacing guidance
-  - `MANDATORY` cells are the official walkthrough
-  - `FACULTATIVE` cells are optional extensions only
+1. ordinary polynomial multiplication / convolution
+2. cyclic vs negacyclic folding
+3. tiny direct NTT / INTT examples
+4. butterfly mechanics in isolation
+5. forward vs inverse flow side by side
+6. ordering / bit-reversal / scaling
+7. Kyber parameter reality and base multiplication
+8. only then implementation-reading / debugging studios
 
-  Difficulty scheme:
+Do not dump advanced Kyber implementation detail before the learner has seen small arrays move.
 
-  - difficulty `1-3` is reserved for mandatory cells
-  - difficulty `4-10` is reserved for facultative cells
+## Current Notebook Contract
 
-  Route notebooks must remain pure route notebooks:
-  - they must not contain facultative detours
-  - they must not confuse meta-level guidance with technical payload
+There is one official learner route only.
 
-  Hide plumbing where possible:
-  - if widgets are used, learners should see the pedagogical surface, not raw helper code unless that code is itself the lesson
+The internal cell-role contract still exists:
 
-  ## Pedagogical Style
+- `meta`
+- `mandatory`
+- `facultative`
 
-  The strongest style is notebook-first, small-step, highly visual, and highly inspectable.
+Difficulty still means:
 
-  Every major concept should be taught through:
-  - careful lecture-style explanation
-  - array-state snapshots
-  - editable examples
-  - multiple-choice retrieval checks
-  - written reflection prompts
-  - “predict the next layer before running it” moments
+- `1-3` reserved for mandatory cells
+- `4-10` reserved for facultative cells
 
-  The learner must be able to watch:
-  - inputs
-  - current layer
-  - twiddle factor / zeta use
-  - pairings
-  - outputs after one butterfly stage
+Important UX rule:
 
-  This topic especially needs:
-  - explicit diagrams of pairings
-  - side-by-side tables of array values after each stage
-  - bit-reversal explained visually, not only verbally
-  - forward and inverse diagrams compared directly
-  - “same structure, opposite direction” intuition for inverse flow
+- Raw `META`, `MANDATORY`, and `FACULTATIVE` labels must **not** appear as notebook headlines.
+- Content headings must be about the content itself.
+- Role and pacing information may appear only through subtle chrome such as colored cards / chips / level badges.
 
-  ## Topic-Specific Judgement
+Route notebooks stay pure:
 
-  The course should make clear that Kyber is not just “a generic FFT story with modular arithmetic”.
+- markdown only
+- no facultative detours
+- clear route guidance
+- clickable navigation only
 
-  The learner must understand:
-  - why polynomial multiplication matters
-  - why negacyclic structure matters
-  - what the transform is buying
-  - why Kyber’s parameter choices shape the exact construction
-  - what butterflies do locally
-  - how local butterfly operations produce the global transform
-  - why inverse butterflies undo the forward structure
-  - where scaling enters
-  - how base multiplication fits between NTT and inverse NTT
+Every canonical notebook must have:
 
-  The course must distinguish carefully between:
-  - mathematical NTT definition
-  - implementation-oriented in-place iterative NTT
-  - Kyber’s specific indexing / ordering / twiddle schedule
+- a top route-guardrails cell
+- a bottom next-notebook handoff cell
+- clickable `Previous`, `Next`, and `Restart route` recovery links
 
-  ## Proposed Curriculum Spine
+Never make the learner choose the next notebook manually from the file tree.
 
-  The likely notebook architecture should look like this:
+## Current Architecture
 
-  1. `START_HERE.ipynb`
-  2. `COURSE_BLUEPRINT.ipynb`
+Source-of-truth files:
 
-  Then technical bundles such as:
+- `tools/render_notebooks.py`
+  - notebook generator
+  - route guardrails / handoff cells
+  - notebook chrome
+  - learner-facing header styling
+- `ntt_learning/course.py`
+  - course constants
+  - route sequence
+  - bundle definitions
+- `ntt_learning/toy_ntt.py`
+  - inspectable math helpers
+  - toy NTT / INTT
+  - CT / GS traces
+  - pairings and stage helpers
+- `ntt_learning/visuals.py`
+  - interactive players
+  - plots
+  - rendering behavior
+- `scripts/app.sh`
+  - Jupyter lifecycle source of truth
+- `tests/`
+  - contract
+  - execution
+  - repo ops
+  - visual UX
 
-  ### Foundations
-  - polynomial multiplication and convolution
-  - negacyclic rings and why Kyber uses them
-  - modular arithmetic and roots of unity
-  - toy NTT with tiny examples
+Do not hand-edit notebook structure when the change belongs in the generator. Change `tools/render_notebooks.py`, then regenerate canonical notebooks.
 
-  ### Butterfly Mechanics
-  - what one butterfly does
-  - forward Cooley-Tukey butterfly
-  - inverse Gentleman-Sande butterfly
-  - layer-by-layer traces
-  - bit-reversal and ordering
+## Current Rendering / Animation Rules
 
-  ### Kyber Mapping
-  - Kyber parameters
-  - Kyber forward NTT
-  - Kyber base multiplication
-  - Kyber inverse NTT
-  - implementation reading studio
+This section matters because several UX regressions already happened here.
 
-  ### Professional / Debugging
-  - common misconceptions
-  - debugging wrong twiddle/sign/index mistakes
-  - hand-tracing selected stages
-  - implementation critique and validation
+### Stable rules
 
-  Each serious module should follow the same bundle style used successfully elsewhere:
+- `schoolbook_diagonal_player(...)` is HTML-board based, not SVG.
+- `wraparound_comparison_player(...)` is HTML-board based, not SVG.
+- The wraparound player was explicitly rewritten because the SVG version jittered and collided.
+- `direct_ntt_player(...)` and `butterfly_story_player(...)` still use SVG, but:
+  - they must render inside horizontal-scroll frames
+  - their SVG canvases must not shrink to fit the viewport
+  - they must use fixed canvas widths with `max-width:none` / `min-width`
+- Player captions should have a fixed minimum height to reduce layout shift.
 
-  - `lecture.ipynb`
-  - `lab.ipynb`
-  - `problems.ipynb`
-  - `studio.ipynb`
+### Practical lesson
 
-  ## Operational Expectations
+Dense explanatory text inside shrinking SVG is a bad idea here.
 
-  The repo should be self-service for a normal user.
+If a player shows:
 
-  Provide repo-local operations such as:
-  - bootstrap
-  - start
-  - stop
-  - restart
-  - status
-  - reset-state
-  - validate
+- text collisions
+- jitter between frames
+- section labels jumping vertically
+- numbers painting over other numbers
 
-  Use a repo-local `.venv`.
+then first suspect:
 
-  Prefer:
-  - local Jupyter
-  - bash-first commands
-  - repo-local config and runtime files
-  - no Docker
-  - no cloud dependency
-  - no IDE-specific assumptions
+- shrinking SVG layout
+- variable-height captions
+- too many text bands inside the same visual corridor
 
-  ## Validation Expectations
+### Regression discipline
 
-  The project should include:
+When fixing one player:
 
-  - curriculum / route tests
-  - pedagogy tests
-  - notebook execution tests
-  - browser UX tests where practical
-  - repo-local operational docs
+- test the other players too
+- extend `tests/test_visuals.py`
+- test the failure mode itself, not just “widget exists”
 
-  The notebooks should be tested not only for existence, but also for:
-  - route consistency
-  - required labels
-  - mandatory/facultative separation
-  - presence of quizzes / exercises / reflections where appropriate
-  - visible next-notebook handoff
+## Current Visual / UX Expectations
 
-  ## Immediate Build Priorities
+The user explicitly rejected “nice enough” visuals. Treat these as hard constraints:
 
-  When starting from an empty repo, do this first:
+- The course should feel plastic and inspectable.
+- The learner should be able to watch values move, not infer motion from prose.
+- Graphics are not decorative. They are the lesson.
+- UX must be foolproof from `START_HERE` to `COURSE_COMPLETE`.
+- The first notebooks matter disproportionately. Weak early visuals destroy trust quickly.
 
-  1. inspect repo state
-  2. create `.venv`
-  3. create package / notebook / test / config skeleton
-  4. create consumer-facing operational scripts
-  5. create the course backbone and route guardrails
-  6. build the first serious module around toy convolution and toy butterflies
-  7. only then expand to Kyber-specific notebooks
+The user also explicitly said:
 
-  Do not start by dumping advanced Kyber code into notebooks.
+- abstractions suck for this purpose
+- they need to see it
+- they are disappointed by pretty-but-useless pictures
 
-  ## What To Avoid
+Design decisions must be judged against that standard.
 
-  Do not:
-  - create multiple competing learner routes
-  - mix meta guidance with technical payload without clear labels
-  - introduce facultative cells into route notebooks
-  - overuse abstraction before a learner has seen concrete arrays move
-  - assume the learner can infer butterfly flow from equations alone
-  - rely on “trust me, this is just FFT-like” explanations
+## Jupyter / Ops State
 
-  ## Recommended First Reads For A Restarted Agent
+The Jupyter lifecycle is aligned with the cross-project manager spec.
 
-  If a coding agent restarts in this repo, it should:
+Use `scripts/app.sh` as the source of truth:
 
-  1. read this file first
-  2. inspect `git status --short --branch`
-  3. inspect `git log --oneline -5`
-  4. inspect the repo tree
-  5. summarize current state and immediate build plan
-  6. then execute
+- `bootstrap`
+- `start`
+- `stop`
+- `restart`
+- `status`
+- `logs`
+- compatibility:
+  - `validate`
+  - `reset-state`
 
-  ## One-Line Restart Prompt
+Important operational constraints:
 
-  Use this after restarting an agent in this repo:
+- Jupyter dirs are isolated inside the repo:
+  - `.jupyter_config`
+  - `.jupyter_data`
+  - `.jupyter_runtime`
+  - `.ipython`
+  - `.cache`
+  - `.logs`
+  - `.run`
+- Kernel is installed with `--sys-prefix`
+- Port allocation scans `8888-8899`
+- PID file lives at `.logs/jupyter.pid` and mirrors to `.run/jupyter.pid`
+- `start` supports background and foreground modes
+- `stop` uses graceful termination before kill fallback
 
-  `Read AGENT_CONTEXT.md first. Then inspect git status and the repo tree, summarize the current state and constraints, and only then continue the build.`
+## Validation State
+
+Current validation expectation:
+
+- run `bash scripts/validate.sh` before finalizing meaningful work
+
+Current suite count:
+
+- `32` tests at the time this file was updated
+
+Current test coverage includes:
+
+- `tests/test_course_contract.py`
+  - notebook existence
+  - role / difficulty metadata
+  - route purity
+  - no raw role labels as notebook headlines
+  - handoff / route-nav presence
+- `tests/test_notebook_execution.py`
+  - code cells execute as plain Python
+- `tests/test_toy_ntt.py`
+  - math helpers
+  - trace examples
+  - round trips
+- `tests/test_repo_ops.py`
+  - scripts / repo-local operations
+- `tests/test_visuals.py`
+  - schoolbook HTML player behavior
+  - wraparound HTML stability
+  - non-shrinking SVG player behavior
+  - slider update behavior
+  - fixed caption-height behavior
+
+Important truth:
+
+- there are still no real browser-level screenshot/playback tests
+- if future visual regressions keep slipping through, raising the testing bar further is a real priority
+
+## Repo Hygiene Gotchas
+
+This repo has one recurring trap: Jupyter notebook noise.
+
+Running or opening tracked notebooks in Jupyter can mutate:
+
+- execution counts
+- outputs
+- metadata
+- cell ids
+
+Those diffs are often not intended course changes.
+
+Before finalizing work:
+
+1. inspect `git diff` on dirty notebooks
+2. if the diffs are only autosave / execution noise, restore them
+3. only commit notebook diffs that represent intentional canonical content changes
+
+Do not return to the user with notebook autosave noise still dirty.
+
+Ignored local-only file:
+
+- `Complete Beginner Guide to the Number Theoretic Transform (NTT).pdf`
+
+It is a local reference artifact and is intentionally ignored.
+
+## Current Restart Checklist
+
+On a fresh restart in this repo, do this in order:
+
+1. read `AGENT_CONTEXT.md`
+2. run `git status --short --branch`
+3. run `git log --oneline -8`
+4. inspect the repo tree
+5. if the tree is dirty, inspect diffs immediately
+6. classify notebook diffs as:
+   - intentional canonical content changes
+   - or autosave / execution noise
+7. summarize current state and constraints
+8. continue autonomously
+
+Before final answer:
+
+1. run relevant tests
+2. run `bash scripts/validate.sh` if the change is substantial
+3. commit
+4. push to `origin master`
+5. verify `git status --short` is empty
+
+## Recent Important Commits
+
+These are useful waypoints for recovery:
+
+- `0955ede` Ignore local reference PDF
+- `934586e` Replace jittery wraparound animation
+- `5f41121` Fix wraparound animation label collisions
+- `b3b1885` Harden notebook animation rendering
+- `5d267ee` Fix notebook headings and schoolbook UX
+- `5aad355` Improve notebook chrome and player responsiveness
+- `f152567` Replace early notebook plots with teaching players
+- `74700b8` Add foolproof notebook route navigation
+
+## One-Line Restart Prompt
+
+Use this after restarting an agent in this repo:
+
+`Read AGENT_CONTEXT.md first. Then inspect git status, git log, dirty diffs, and the repo tree, summarize the current state and constraints, clean incidental notebook noise if needed, and continue autonomously.`

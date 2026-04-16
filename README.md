@@ -19,11 +19,13 @@ The current build covers convolution, negacyclic folding, direct `NTTψ` / `INTT
 
 ## Notebook Contract
 
-Visible notebook cells follow an explicit contract:
+Notebook cells follow an explicit internal contract:
 
-- `META` cells provide route, objective, pacing, and handoff guidance.
-- `MANDATORY` cells are the official walkthrough.
-- `FACULTATIVE` cells are optional extensions only.
+- `meta` cells provide route, objective, pacing, and handoff guidance.
+- `mandatory` cells are the official walkthrough.
+- `facultative` cells are optional extensions only.
+
+For the learner, those roles are conveyed through notebook chrome and coloring. Raw `META` / `MANDATORY` / `FACULTATIVE` labels are not supposed to appear as the visible content headlines.
 
 Difficulty is reserved as follows:
 
